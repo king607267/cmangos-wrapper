@@ -1,0 +1,47 @@
+version: '2'
+
+services:
+   db:
+     image: mysql:5.7.30
+     volumes:
+       - path/:/var/lib/mysql
+     restart: "no"
+     environment:
+       MYSQL_ROOT_PASSWORD: mangos
+       MYSQL_PASSWORD: mangos
+       MYSQL_ROOT_PASSWORD: mangos
+       TZ: Asia/Shanghai
+
+   realmd:
+     depends_on:
+       - db
+     image: king607267/cmangos-classic-realmd:latest
+     ports:
+       - "3724:3724"
+     restart: "no"
+     environment:
+       LOGIN_DATABASE_INFO: db;3306;mangos;mangos;classicrealmd
+       TZ: Asia/Shanghai
+
+   server:
+     tty: true
+     stdin_open: true
+     depends_on:
+       - db
+       - realmd
+     image: king607267/cmangos-classic-server:latest
+     volumes:
+       - path/maps:/etc/mangos/maps
+       - path/vmaps:/etc/mangos/vmaps
+       - path/mmaps:/etc/mangos/mmaps
+       - path/dbc:/etc/mangos/dbc
+       - path/Cameras:/etc/mangos/Cameras
+     ports:
+       - "8085:8085"
+     restart: "no"
+     environment:
+       LOGIN_DATABASE_INFO: db;3306;mangos;mangos;classicrealmd
+       WORLD_DATABASE_INFO: db;3306;mangos;mangos;classicmangos
+       CHARACTER_DATABASE_INFO: db;3306;mangos;mangos;classiccharacters
+       TZ: Asia/Shanghai
+

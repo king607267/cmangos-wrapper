@@ -1,0 +1,52 @@
+FROM ubuntu:18.04 as build-step
+ARG CMANGOS_SERVER_BRANCH=master
+ARG THREAD_COUNT="-j4"
+ARG CMAKE_VERSION="3.19.1"
+
+RUN apt-get update  && \
+    apt-get install libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev libboost-all-dev wget -y && \
+    wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh && \
+    sh cmake-${CMAKE_VERSION}-Linux-x86_64.sh --skip-license --prefix=/usr && \
+    git clone https://github.com/cmangos/mangos-classic.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
+    mkdir build && cd build && \
+    cmake ../mangos-classic -DPCH=1 -DDEBUG=0 -DBUILD_PLAYERBOT=ON -DCMAKE_INSTALL_PREFIX=\../mangos-classic/run && \
+    make ${THREAD_COUNT} && \
+    make install ${THREAD_COUNT}
+
+#Runtime image
+FROM ubuntu:18.04 as runtime
+MAINTAINER wangjueming <king607267@gmail.com>
+
+EXPOSE 8085
+ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;classicrealmd
+ENV WORLD_DATABASE_INFO=127.0.0.1;3306;root;mangos;classicmangos
+ENV CHARACTER_DATABASE_INFO=127.0.0.1;3306;root;mangos;classiccharacters
+
+WORKDIR /etc/mangos/
+COPY --from=build-step /mangos-classic/run/bin ./bin
+COPY --from=build-step /mangos-classic/run/etc ./conf
+
+RUN apt-get -y update && apt-get -y upgrade && \
+    apt-get -y install libmysqlclient20 openssl && \
+    useradd -ms /bin/bash mangos && \
+    mv conf/mangosd.conf.dist conf/mangosd.conf && \
+    sed -i 's/^LoginDatabaseInfo     =.*$/LoginDatabaseInfo     = LOGIN_DATABASE_INFO/' conf/mangosd.conf && \
+    sed -i 's/^WorldDatabaseInfo     =.*$/WorldDatabaseInfo     = WORLD_DATABASE_INFO/' conf/mangosd.conf && \
+    sed -i 's/^CharacterDatabaseInfo =.*$/CharacterDatabaseInfo = CHARACTER_DATABASE_INFO/' conf/mangosd.conf && \
+    sed -i 's/^DataDir = "."/DataDir = "\/etc\/mangos"/' conf/mangosd.conf && \
+    rm /etc/mangos/bin/realmd && \
+    rm /etc/mangos/conf/realmd* && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN touch run_cmangos.sh && \
+    echo "#!/bin/bash" >> run_cmangos.sh &&\
+    echo "sed -i \"s/LOGIN_DATABASE_INFO/\$LOGIN_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
+    echo "sed -i \"s/WORLD_DATABASE_INFO/\$WORLD_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
+    echo "sed -i \"s/CHARACTER_DATABASE_INFO/\$CHARACTER_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
+    echo "/etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf" >> run_cmangos.sh &&\
+    chmod u+x run_cmangos.sh && \
+    chown -R mangos:mangos .
+	
+USER mangos
+CMD ["./run_cmangos.sh"]
+
