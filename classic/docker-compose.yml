@@ -2,14 +2,15 @@ version: '2'
 
 services:
    db:
-     image: mysql:5.7.30
+     image: king607267/cmangos-classic-db:latest
+     ports:
+       - "3306:3306"
      volumes:
-       - path/:/var/lib/mysql
+       - /path:/var/lib/mysql
      restart: "no"
      environment:
        MYSQL_ROOT_PASSWORD: mangos
        MYSQL_PASSWORD: mangos
-       MYSQL_ROOT_PASSWORD: mangos
        TZ: Asia/Shanghai
 
    realmd:
