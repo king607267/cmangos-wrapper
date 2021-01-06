@@ -160,37 +160,47 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     CMANGOS_WORLD_DB=""
     CMANGOS_CHARACTER_DB=""
     CMANGOS_REALMD_DB=""
+    CMANGOS_SERVER_PATH=""
+    CMANGOS_DB_FILE_PATH=""
     if [ "$CMANGOS_SERVER_VERSION" = "classic" ]; then
       CMANGOS_WORLD_DB=classicmangos
       CMANGOS_CHARACTER_DB=classiccharacters
       CMANGOS_REALMD_DB=classicrealmd
+      CMANGOS_SERVER_PATH=mangos-classic
+      CMANGOS_DB_FILE_PATH=classic-db
+    elif [ "$CMANGOS_SERVER_VERSION" = "tbc" ]; then
+      CMANGOS_WORLD_DB=tbcmangos
+      CMANGOS_CHARACTER_DB=tbccharacters
+      CMANGOS_REALMD_DB=tbcrealmd
+      CMANGOS_SERVER_PATH=mangos-tbc
+      CMANGOS_DB_FILE_PATH=tbc-db
     fi
 
     echo "CREATE DATABASE \`$CMANGOS_WORLD_DB\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
     echo "CREATE DATABASE \`$CMANGOS_CHARACTER_DB\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
     echo "CREATE DATABASE \`$CMANGOS_REALMD_DB\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
 
-    "${mysql[@]}" -D${CMANGOS_WORLD_DB} </mangos-classic/sql/base/mangos.sql
-    for f in /mangos-classic/sql/base/dbc/original_data/*.sql; do
+    "${mysql[@]}" -D${CMANGOS_WORLD_DB} </"$CMANGOS_SERVER_PATH"/sql/base/mangos.sql
+    for f in /"$CMANGOS_SERVER_PATH"/sql/base/dbc/original_data/*.sql; do
       echo "$0: running $f"
       "${mysql[@]}" -D${CMANGOS_WORLD_DB} <"$f"
     done
-    for f in /mangos-classic/sql/base/dbc/cmangos_fixes/*.sql; do
+    for f in /"$CMANGOS_SERVER_PATH"/sql/base/dbc/cmangos_fixes/*.sql; do
       echo "$0: running $f"
       "${mysql[@]}" -D${CMANGOS_WORLD_DB} <"$f"
     done
-    for f in /mangos-classic/sql/scriptdev2/*.sql; do
+    for f in /"$CMANGOS_SERVER_PATH"/sql/scriptdev2/*.sql; do
       echo "$0: running $f"
       "${mysql[@]}" -D${CMANGOS_WORLD_DB} <"$f"
     done
     echo "WORLD DATABASE CREATED."
 
     echo "CHARACTER DATABASE CREATION..."
-    "${mysql[@]}" -D${CMANGOS_CHARACTER_DB} </mangos-classic/sql/base/characters.sql
+    "${mysql[@]}" -D${CMANGOS_CHARACTER_DB} </"$CMANGOS_SERVER_PATH"/sql/base/characters.sql
     echo "CHARACTER DATABASE CREATED."
 
     echo "REALM DATABASE CREATION..."
-    "${mysql[@]}" -D${CMANGOS_REALMD_DB} </mangos-classic/sql/base/realmd.sql
+    "${mysql[@]}" -D${CMANGOS_REALMD_DB} </"$CMANGOS_SERVER_PATH"/sql/base/realmd.sql
     echo "REALM DATABASE CREATED."
 
     echo "MYSQL_USER CREATION..."
@@ -208,10 +218,10 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     echo
     echo "MYSQL_USER CREATED."
 
-    cd classic-db
+    cd $CMANGOS_DB_FILE_PATH
     sed -i "s/^USERNAME=.*$/USERNAME=\"$MYSQL_USER\"/g" InstallFullDB.sh
     sed -i "s/^PASSWORD=.*$/PASSWORD=\"$MYSQL_PASSWORD\"/g" InstallFullDB.sh
-    sed -i 's/^CORE_PATH=""/CORE_PATH="\/mangos-classic"/' InstallFullDB.sh
+    sed -i "s/^CORE_PATH=\"\"/CORE_PATH=\"\/$CMANGOS_SERVER_PATH\"/" InstallFullDB.sh
 
     touch InstallFullDB.config
     echo "DB_HOST=\"localhost\"" >>InstallFullDB.config
@@ -219,7 +229,7 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     echo "DATABASE="$CMANGOS_WORLD_DB"" >>InstallFullDB.config
     echo "USERNAME="$MYSQL_USER"" >>InstallFullDB.config
     echo "PASSWORD="$MYSQL_PASSWORD"" >>InstallFullDB.config
-    echo "CORE_PATH=\"/mangos-classic\"" >>InstallFullDB.config
+    echo "CORE_PATH=\"/"$CMANGOS_SERVER_PATH"\"" >>InstallFullDB.config
     echo "MYSQL=\"mysql\"" >>InstallFullDB.config
     echo "FORCE_WAIT=\"YES\"" >>InstallFullDB.config
     echo "AHBOT=\"NO\"" >>InstallFullDB.config
