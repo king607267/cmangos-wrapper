@@ -181,18 +181,6 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     echo "CREATE DATABASE \`$CMANGOS_REALMD_DB\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
 
     "${mysql[@]}" -D${CMANGOS_WORLD_DB} </"$CMANGOS_SERVER_PATH"/sql/base/mangos.sql
-    for f in /"$CMANGOS_SERVER_PATH"/sql/base/dbc/original_data/*.sql; do
-      echo "$0: running $f"
-      "${mysql[@]}" -D${CMANGOS_WORLD_DB} <"$f"
-    done
-    for f in /"$CMANGOS_SERVER_PATH"/sql/base/dbc/cmangos_fixes/*.sql; do
-      echo "$0: running $f"
-      "${mysql[@]}" -D${CMANGOS_WORLD_DB} <"$f"
-    done
-    for f in /"$CMANGOS_SERVER_PATH"/sql/scriptdev2/*.sql; do
-      echo "$0: running $f"
-      "${mysql[@]}" -D${CMANGOS_WORLD_DB} <"$f"
-    done
     echo "WORLD DATABASE CREATED."
 
     echo "CHARACTER DATABASE CREATION..."
