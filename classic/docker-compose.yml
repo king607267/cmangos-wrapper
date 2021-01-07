@@ -11,6 +11,7 @@ services:
      environment:
        MYSQL_ROOT_PASSWORD: mangos
        MYSQL_PASSWORD: mangos
+       MYSQL_USER: mangos
        TZ: Asia/Shanghai
 
    realmd:
