@@ -1,5 +1,9 @@
+#default classic
+ARG CMANGOS_CORE=classic
+
 FROM ubuntu:18.04 as build-step
 ARG CMANGOS_SERVER_BRANCH=master
+ARG CMANGOS_CORE
 ARG THREAD_COUNT="-j4"
 ARG CMAKE_VERSION="3.19.1"
 
@@ -7,9 +11,9 @@ RUN apt-get update  && \
     apt-get install libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev cmake libboost-all-dev wget -y && \
     wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh && \
     sh cmake-${CMAKE_VERSION}-Linux-x86_64.sh --skip-license --prefix=/usr && \
-    git clone https://github.com/cmangos/mangos-tbc.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
+    git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
     mkdir build && cd build && \
-    cmake ../mangos-tbc -DPCH=1 -DDEBUG=0 -DBUILD_PLAYERBOT=ON -DCMAKE_INSTALL_PREFIX=\../mangos-tbc/run && \
+    cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_PLAYERBOT=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
     make ${THREAD_COUNT} && \
     make install ${THREAD_COUNT}
 
@@ -18,11 +22,13 @@ FROM ubuntu:18.04 as runtime
 MAINTAINER wangjueming <king607267@gmail.com>
 
 EXPOSE 3724
-ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;classicrealmd
+ARG CMANGOS_CORE
+ENV CMANGOS_CORE=${CMANGOS_CORE}
+ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}realmd
 
 WORKDIR /etc/mangos/
-COPY --from=build-step /mangos-tbc/run/bin ./bin
-COPY --from=build-step /mangos-tbc/run/etc ./conf
+COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin ./bin
+COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get -y install libmysqlclient20 openssl && \
