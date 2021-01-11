@@ -174,6 +174,12 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
       CMANGOS_REALMD_DB=tbcrealmd
       CMANGOS_SERVER_PATH=mangos-tbc
       CMANGOS_DB_FILE_PATH=tbc-db
+    elif [ "$CMANGOS_CORE" = "wotlk" ]; then
+      CMANGOS_WORLD_DB=wotlkmangos
+      CMANGOS_CHARACTER_DB=wotlkcharacters
+      CMANGOS_REALMD_DB=wotlkrealmd
+      CMANGOS_SERVER_PATH=mangos-wotlk
+      CMANGOS_DB_FILE_PATH=wotlk-db
     fi
 
     echo "CREATE DATABASE \`$CMANGOS_WORLD_DB\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
