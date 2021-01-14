@@ -182,19 +182,19 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
       CMANGOS_DB_FILE_PATH=wotlk-db
     fi
 
-    echo "CREATE DATABASE \`$CMANGOS_WORLD_DB\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
-    echo "CREATE DATABASE \`$CMANGOS_CHARACTER_DB\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
-    echo "CREATE DATABASE \`$CMANGOS_REALMD_DB\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
+    echo "CREATE DATABASE \`${CMANGOS_WORLD_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
+    echo "CREATE DATABASE \`${CMANGOS_CHARACTER_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
+    echo "CREATE DATABASE \`${CMANGOS_REALMD_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
 
-    "${mysql[@]}" -D${CMANGOS_WORLD_DB} </"$CMANGOS_SERVER_PATH"/sql/base/mangos.sql
+    "${mysql[@]}" -D${CMANGOS_WORLD_DB} </"${CMANGOS_SERVER_PATH}"/sql/base/mangos.sql
     echo "WORLD DATABASE CREATED."
 
     echo "CHARACTER DATABASE CREATION..."
-    "${mysql[@]}" -D${CMANGOS_CHARACTER_DB} </"$CMANGOS_SERVER_PATH"/sql/base/characters.sql
+    "${mysql[@]}" -D${CMANGOS_CHARACTER_DB} </"${CMANGOS_SERVER_PATH}"/sql/base/characters.sql
     echo "CHARACTER DATABASE CREATED."
 
     echo "REALM DATABASE CREATION..."
-    "${mysql[@]}" -D${CMANGOS_REALMD_DB} </"$CMANGOS_SERVER_PATH"/sql/base/realmd.sql
+    "${mysql[@]}" -D${CMANGOS_REALMD_DB} </"${CMANGOS_SERVER_PATH}"/sql/base/realmd.sql
     echo "REALM DATABASE CREATED."
 
     echo "MYSQL_USER CREATION..."
@@ -202,9 +202,9 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     file_env 'MYSQL_PASSWORD'
     if [ "$MYSQL_USER" -a "$MYSQL_PASSWORD" ]; then
       echo "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;" | "${mysql[@]}"
-      echo "GRANT ALL ON \`$CMANGOS_WORLD_DB\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
-      echo "GRANT ALL ON \`$CMANGOS_CHARACTER_DB\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
-      echo "GRANT ALL ON \`$CMANGOS_REALMD_DB\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
+      echo "GRANT ALL ON \`${CMANGOS_WORLD_DB}\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
+      echo "GRANT ALL ON \`${CMANGOS_CHARACTER_DB}\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
+      echo "GRANT ALL ON \`${CMANGOS_REALMD_DB}\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
 
       echo 'FLUSH PRIVILEGES ;' | "${mysql[@]}"
     fi
@@ -212,18 +212,18 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     echo
     echo "MYSQL_USER CREATED."
 
-    cd $CMANGOS_DB_FILE_PATH
+    cd ${CMANGOS_DB_FILE_PATH}
     sed -i "s/^USERNAME=.*$/USERNAME=\"$MYSQL_USER\"/g" InstallFullDB.sh
     sed -i "s/^PASSWORD=.*$/PASSWORD=\"$MYSQL_PASSWORD\"/g" InstallFullDB.sh
-    sed -i "s/^CORE_PATH=\"\"/CORE_PATH=\"\/$CMANGOS_SERVER_PATH\"/" InstallFullDB.sh
+    sed -i "s/^CORE_PATH=\"\"/CORE_PATH=\"\/${CMANGOS_SERVER_PATH}\"/" InstallFullDB.sh
 
     touch InstallFullDB.config
     echo "DB_HOST=\"localhost\"" >>InstallFullDB.config
     echo "DB_PORT=\"3306\"" >>InstallFullDB.config
-    echo "DATABASE="$CMANGOS_WORLD_DB"" >>InstallFullDB.config
+    echo "DATABASE="${CMANGOS_WORLD_DB}"" >>InstallFullDB.config
     echo "USERNAME="$MYSQL_USER"" >>InstallFullDB.config
     echo "PASSWORD="$MYSQL_PASSWORD"" >>InstallFullDB.config
-    echo "CORE_PATH=\"/"$CMANGOS_SERVER_PATH"\"" >>InstallFullDB.config
+    echo "CORE_PATH=\"/"${CMANGOS_SERVER_PATH}"\"" >>InstallFullDB.config
     echo "MYSQL=\"mysql\"" >>InstallFullDB.config
     echo "FORCE_WAIT=\"YES\"" >>InstallFullDB.config
     echo "AHBOT=\"NO\"" >>InstallFullDB.config
