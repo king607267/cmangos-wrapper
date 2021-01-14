@@ -1,17 +1,17 @@
 构建指南
 ========================================
 ###数据库
-使用Dockerfile-db构建镜像，构建后创建容器使用如下命令:
+使用Dockerfile-db构建镜像使用如下命令:
 ```shell
 sudo docker build --build-arg CMANGOS_CORE=classic -t cmangos-docker/cmangos-classic-realmd:1.0 -f Dockerfile-db .
 ```
 ###认证登陆服务器
-使用Dockerfile-realmd构建镜像，构建后创建容器使用如下命令:
+使用Dockerfile-realmd构建镜像使用如下命令:
 ```shell
 sudo docker build --build-arg CMANGOS_CORE=classic -t cmangos-docker/cmangos-classic-realmd:1.0 -f Dockerfile-realmd .
 ```
 ###游戏逻辑服务器
-使用Dockerfile-mangosd构建镜像，构建后创建容器使用如下命令:
+使用Dockerfile-mangosd构建镜像使用如下命令:
 ```shell
 sudo docker build --build-arg CMANGOS_CORE=classic -t cmangos-docker/cmangos-classic-server:1.0 -f Dockerfile-server .
 ```
