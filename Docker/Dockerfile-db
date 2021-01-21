@@ -4,18 +4,20 @@ EXPOSE 3306
 
 #default master
 ARG CMANGOS_DATABASE_BRANCH=master
+#default master
+ARG CMANGOS_SERVER_BRANCH=master
 #default classic
 ARG CMANGOS_CORE=classic
 
 ENV CMANGOS_CORE=${CMANGOS_CORE}
 
-COPY launch_mysql.sh ./
+#COPY launch_mysql.sh ./
 
-RUN apt-get update && \
+RUN apt-get update -qq && \
     apt-get install git wget -y && \
-    git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS_DATABASE_BRANCH} --recursive --depth=1 && \
+    git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
     git clone https://github.com/cmangos/${CMANGOS_CORE}-db.git -b ${CMANGOS_DATABASE_BRANCH} --recursive --depth=1 && \
-#    wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-docker/master/launch_mysql.sh && \
+    wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/Docker/launch_mysql.sh && \
     cd ./mangos-${CMANGOS_CORE} && \
     rm -rf `ls |egrep -v '(sql)'` && \
     rm -rf .git && \

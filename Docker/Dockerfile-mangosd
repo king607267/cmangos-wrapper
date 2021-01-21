@@ -4,11 +4,11 @@ ARG CMANGOS_CORE=classic
 FROM ubuntu:18.04 as build-step
 ARG CMANGOS_SERVER_BRANCH=master
 #default classic
-ARG CMANGOS_CORE
+ARG CMANGOS_CORE=classic
 ARG THREAD_COUNT="-j4"
 ARG CMAKE_VERSION="3.19.1"
 
-RUN apt-get update  && \
+RUN apt-get update -qq && \
     apt-get install libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev libboost-all-dev wget -y && \
     wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh && \
     sh cmake-${CMAKE_VERSION}-Linux-x86_64.sh --skip-license --prefix=/usr && \
