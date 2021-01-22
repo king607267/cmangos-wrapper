@@ -6,7 +6,7 @@ services:
      ports:
        - "3306:3306"
      volumes:
-       - /path:/var/lib/mysql
+       - yourpath/db:/var/lib/mysql
      restart: "no"
      environment:
        MYSQL_ROOT_PASSWORD: mangos
@@ -33,11 +33,11 @@ services:
        - realmd
      image: king607267/cmangos-tbc-server:latest
      volumes:
-       - path/maps:/etc/mangos/maps
-       - path/vmaps:/etc/mangos/vmaps
-       - path/mmaps:/etc/mangos/mmaps
-       - path/dbc:/etc/mangos/dbc
-       - path/Cameras:/etc/mangos/Cameras
+       - yourpath/maps:/etc/mangos/maps
+       - yourpath/vmaps:/etc/mangos/vmaps
+       - yourpath/mmaps:/etc/mangos/mmaps
+       - yourpath/dbc:/etc/mangos/dbc
+       - yourpath/Cameras:/etc/mangos/Cameras
      ports:
        - "8085:8085"
      restart: "no"
