@@ -25,14 +25,13 @@ if [ ! -f ${CONFIG_FILE} ]; then
   exit 1
 fi
 
-cp -r ${CONFIG_FILE} /tmp
 cd /tmp
 
 if [ ! -d translations_${CMANGOS_CORE} ]; then
-  git clone https://github.com/MangosExtras/Mangos${CMANGOS_CORE}_Localised.git translations_${CMANGOS_CORE} -b master --recursive --depth=1
+  git clone https://github.com/MangosExtras/Mangos${CMANGOS_CORE}_Localised.git translations_${CMANGOS_CORE} -b master --recursive --depth=1 && cd translations_${CMANGOS_CORE}
+else
+  cd translations_${CMANGOS_CORE} && git pull
 fi
-
-cd translations_${CMANGOS_CORE}
 
 export MYSQL_PWD="${PASSWORD}"
 MYSQL_COMMAND="${MYSQL} -h${DB_HOST} -P${DB_PORT} -u${USERNAME} ${DATABASE}"
@@ -46,9 +45,11 @@ echo -e >>1+2+3.sql
 cat 2_Add_NewLocalisationFields.sql >>1+2+3.sql
 echo -e >>1+2+3.sql
 cat 3_InitialSaveEnglish.sql >>1+2+3.sql
+#注释locales_command相关sql
 sed -i 's/^INSERT.*\(command\).*$/-- &/' 1+2+3.sql
 sed -i '/^        ALTER.*\(command\).*/,/;$/s/^/-- &/' 1+2+3.sql
 sed -i '/^UPDATE.*\(command\).*/,/;$/s/^/-- &/' 1+2+3.sql
+#替换表名
 sed -i 's/db_script/dbscript/' 1+2+3.sql
 ${MYSQL_COMMAND} <1+2+3.sql
 
