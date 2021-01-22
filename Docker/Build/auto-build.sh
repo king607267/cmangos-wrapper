@@ -7,7 +7,7 @@ HUB_DOCKER_USERNAME="king607267"
 function initConfFile() {
   if [ ! -f ~/${CONFIG_FILE} ]; then
     cat >~/${CONFIG_FILE} <<EOF
-#save git repo lasted commit
+#记录最后一次构建的版本号
 mangos-classic=00
 classic-db=00
 
@@ -16,6 +16,9 @@ wotlk-db=00
 
 mangos-tbc=00
 tbc-db=00
+
+#记录是按tag构建还是按最新版本
+build-type=master
 EOF
   fi
 }
@@ -43,24 +46,33 @@ function getLastedCommit() {
   echo ${line#*=}
 }
 
+function getBuildType() {
+  line=$(grep -r "^build-type=" ~/${CONFIG_FILE})
+  echo ${line#*=}
+}
+
 function getRepoCurrentTagCommit() {
   echo $(git log $(getRepoCurrentTag) -1 --pretty=format:'%h')
+}
+
+function getRepoCurrentMasterCommit() {
+  echo $(git log -1 --pretty=format:'%h')
 }
 
 function buildImage() {
   #构建
   DOCKER_FILE_NAME=""
-  BUILD_ARG="--build-arg CMANGOS_SERVER_BRANCH=$2"
-  if [[ $3 =~ "-db" ]]; then
-    BUILD_ARG="--build-arg CMANGOS_DATABASE_BRANCH=$2 --build-arg CMANGOS_SERVER_BRANCH=${CACHE_CURRENT_TAG["mangos-"${3%-*}]}"
+  BUILD_ARG="--build-arg CMANGOS_SERVER_BRANCH=$1"
+  if [[ $2 =~ "-db" ]]; then
+    BUILD_ARG="--build-arg CMANGOS_DATABASE_BRANCH=$1 --build-arg CMANGOS_SERVER_BRANCH=$1"
     DOCKER_FILE_NAME="Dockerfile-db"
-  elif [[ $3 =~ "-server" ]]; then
+  elif [[ $2 =~ "-server" ]]; then
     DOCKER_FILE_NAME="Dockerfile-mangosd"
   else
     DOCKER_FILE_NAME="Dockerfile-realmd"
   fi
-  echo "docker building... --build-arg CMANGOS_CORE=${3%-*} ${BUILD_ARG} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$3:$4 -f ../${DOCKER_FILE_NAME} ."
-  docker build --build-arg CMANGOS_CORE=${3%-*} ${BUILD_ARG} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$3:$4 -f ../${DOCKER_FILE_NAME} .
+  echo " docker build --build-arg CMANGOS_CORE=${2%-*} ${BUILD_ARG} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$2:$3 -f ../${DOCKER_FILE_NAME} ."
+  docker build --build-arg CMANGOS_CORE=${2%-*} ${BUILD_ARG} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$2:$3 -f ../${DOCKER_FILE_NAME} .
 }
 
 declare -A DOCKER_REPO_NAMES
@@ -73,10 +85,7 @@ DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd"
 
 declare -A CACHE_CURRENT_TAG
 
-function autoBuild() {
-  initConfFile
-  cp -f ../Dockerfile-* /tmp
-  cd /tmp
+function autoBuildGitTag() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
     initGitRepo ${key}
     #前当前版本和前一次不同需要构建
@@ -86,9 +95,30 @@ function autoBuild() {
       NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
       for NAME in ${NAMES[*]}; do
         CACHE_CURRENT_TAG[${key}]=$(getRepoCurrentTag)
-        buildImage ${key} $(getRepoCurrentTag) ${NAME} ${CURRENT_TAG_COMMIT}
+        buildImage "$(getRepoCurrentTag)" ${NAME} ${CURRENT_TAG_COMMIT}
         checkImage ${NAME} ${CURRENT_TAG_COMMIT}
         updateConfFiles ${key} ${CURRENT_TAG_COMMIT}
+      done
+    else
+      echo "${key} are up-to-date."
+    fi
+    cd ..
+  done
+}
+
+function autoBuildGitMaster() {
+  for key in ${!DOCKER_REPO_NAMES[*]}; do
+    initGitRepo ${key}
+    #前当前版本和前一次不同需要构建
+    CURRENT_MASTER_COMMIT=$(getRepoCurrentMasterCommit)
+    if [ $(getLastedCommit ${key}) != ${CURRENT_MASTER_COMMIT} ]; then
+      #获取server和realmd的docker repo
+      NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
+      for NAME in ${NAMES[*]}; do
+        #        CACHE_CURRENT_TAG[${key}]=$(getRepoCurrentTag)
+        buildImage "master" ${NAME} ${CURRENT_MASTER_COMMIT}
+        checkImage ${NAME} ${CURRENT_MASTER_COMMIT}
+        updateConfFiles ${key} ${CURRENT_MASTER_COMMIT}
       done
     else
       echo "${key} no build"
@@ -104,7 +134,6 @@ function checkImage() {
   DOCKER_IMAGE_IS_MATCH_TAR_FILE="false"
   # 判断是否有镜像,存在时创建相应的容器实例
   for i in [ $(docker images) ]; do
-    #statements
     if [[ "$i" == "$2" ]]; then
       DOCKER_IMAGE_IS_MATCH_TAR_FILE="true"
       echo "${DOCKER_IMAGE_NAME} build success!"
@@ -136,8 +165,20 @@ function imagePush() {
     fi
   done
 }
+
+function imageDelete() {
+  echo docker images --filter "dangling=true" --format "{{.ID}}" && sudo docker images --filter=reference="king607267*:*" --format "{{.ID}}"
+}
+
 start_time=$(date +%s)
-autoBuild
+initConfFile
+cp -f ../Dockerfile-* /tmp
+cd /tmp
+if [ $(getBuildType) == "master" ]; then
+  autoBuildGitMaster
+else
+  autoBuildGitTag
+fi
 imagePush ""
 modifyImageTag
 imagePush "latest"
