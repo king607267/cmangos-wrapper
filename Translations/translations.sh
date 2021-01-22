@@ -8,7 +8,11 @@ USERNAME="mangos"
 PASSWORD="mangos"
 MYSQL="mysql"
 CMANGOS_CORE="classic"
-TRANSLATIONS="Chinese"
+
+if [ ! -f ${CONFIG_FILE} ]; then
+  echo "${CONFIG_FILE} not found."
+  exit 1
+fi
 
 . ${CONFIG_FILE}
 
@@ -18,11 +22,6 @@ elif [ "${CMANGOS_CORE}" = "tbc" ]; then
   CMANGOS_CORE=one
 elif [ "${CMANGOS_CORE}" = "wotlk" ]; then
   CMANGOS_CORE=two
-fi
-
-if [ ! -f ${CONFIG_FILE} ]; then
-  echo "${CONFIG_FILE} not found."
-  exit 1
 fi
 
 cd /tmp
