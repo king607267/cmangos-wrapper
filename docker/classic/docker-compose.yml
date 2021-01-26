@@ -46,4 +46,3 @@ services:
        WORLD_DATABASE_INFO: db;3306;mangos;mangos;classicmangos
        CHARACTER_DATABASE_INFO: db;3306;mangos;mangos;classiccharacters
        TZ: Asia/Shanghai
-

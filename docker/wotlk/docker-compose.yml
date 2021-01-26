@@ -46,4 +46,3 @@ services:
        WORLD_DATABASE_INFO: db;3306;mangos;mangos;wotlkmangos
        CHARACTER_DATABASE_INFO: db;3306;mangos;mangos;wotlkcharacters
        TZ: Asia/Shanghai
-
