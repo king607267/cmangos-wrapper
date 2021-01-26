@@ -167,13 +167,16 @@ function imagePush() {
 }
 
 function imageDelete() {
-  echo docker images --filter "dangling=true" --format "{{.ID}}" && sudo docker images --filter=reference="king607267*:*" --format "{{.ID}}"
+  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && sudo docker images --filter=reference="king607267/*:latest" --format "{{.ID}}") ; do
+      docker rmi -f $i
+  done
 }
 
 start_time=$(date +%s)
 initConfFile
 cp -f ../Dockerfile-* /tmp
 cd /tmp
+#imageDelete
 if [ $(getBuildType) == "master" ]; then
   autoBuildGitMaster
 else
