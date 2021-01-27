@@ -6,6 +6,8 @@ cmangos-wrapper
 
 [1]: https://github.com/cmangos "github"
 [2]: https://github.com/cmangos/issues/wiki/Installation-Instructions "wiki"
-Docker目录下文件用于构建服务端镜像
+docker目录下文件用于构建服务端镜像
 
-Translations目录用于国际化
+translations目录用于国际化
+
+updateDB目录更新数据库
