@@ -16,9 +16,6 @@ wotlk-db=00
 
 mangos-tbc=00
 tbc-db=00
-
-#记录是按tag构建还是按最新版本
-build-type=master
 EOF
   fi
 }
@@ -62,17 +59,18 @@ function getRepoCurrentMasterCommit() {
 function buildImage() {
   #构建
   DOCKER_FILE_NAME=""
-  BUILD_ARG="--build-arg CMANGOS_SERVER_BRANCH=$1"
-  if [[ $2 =~ "-db" ]]; then
-    BUILD_ARG="--build-arg CMANGOS_DATABASE_BRANCH=$1 --build-arg CMANGOS_SERVER_BRANCH=$1"
+  TARGET=""
+  if [[ $1 =~ "-db" ]]; then
     DOCKER_FILE_NAME="Dockerfile-db"
-  elif [[ $2 =~ "-server" ]]; then
-    DOCKER_FILE_NAME="Dockerfile-mangosd"
+  elif [[ $1 =~ "-server" ]]; then
+    TARGET="--target mangosd"
+    DOCKER_FILE_NAME="Dockerfile-server"
   else
-    DOCKER_FILE_NAME="Dockerfile-realmd"
+    TARGET="--target realmd"
+    DOCKER_FILE_NAME="Dockerfile-server"
   fi
-  echo " docker build --build-arg CMANGOS_CORE=${2%-*} ${BUILD_ARG} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$2:$3 -f ../${DOCKER_FILE_NAME} ."
-  docker build --build-arg CMANGOS_CORE=${2%-*} ${BUILD_ARG} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$2:$3 -f ../${DOCKER_FILE_NAME} .
+  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ../${DOCKER_FILE_NAME} ."
+  docker build --build-arg CMANGOS_CORE=${1%-*} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ../${DOCKER_FILE_NAME} .
 }
 
 declare -A DOCKER_REPO_NAMES
@@ -83,29 +81,6 @@ DOCKER_REPO_NAMES["classic-db"]="classic-db"
 DOCKER_REPO_NAMES["tbc-db"]="tbc-db"
 DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd"
 
-declare -A CACHE_CURRENT_TAG
-
-function autoBuildGitTag() {
-  for key in ${!DOCKER_REPO_NAMES[*]}; do
-    initGitRepo ${key}
-    #前当前版本和前一次不同需要构建
-    CURRENT_TAG_COMMIT=$(getRepoCurrentTagCommit)
-    if [ $(getLastedCommit ${key}) != ${CURRENT_TAG_COMMIT} ]; then
-      #获取server和realmd的docker repo
-      NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
-      for NAME in ${NAMES[*]}; do
-        CACHE_CURRENT_TAG[${key}]=$(getRepoCurrentTag)
-        buildImage "$(getRepoCurrentTag)" ${NAME} ${CURRENT_TAG_COMMIT}
-        checkImage ${NAME} ${CURRENT_TAG_COMMIT}
-        updateConfFiles ${key} ${CURRENT_TAG_COMMIT}
-      done
-    else
-      echo "${key} are up-to-date."
-    fi
-    cd ..
-  done
-}
-
 function autoBuildGitMaster() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
     initGitRepo ${key}
@@ -115,8 +90,7 @@ function autoBuildGitMaster() {
       #获取server和realmd的docker repo
       NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
       for NAME in ${NAMES[*]}; do
-        #        CACHE_CURRENT_TAG[${key}]=$(getRepoCurrentTag)
-        buildImage "master" ${NAME} ${CURRENT_MASTER_COMMIT}
+        buildImage ${NAME} ${CURRENT_MASTER_COMMIT}
         checkImage ${NAME} ${CURRENT_MASTER_COMMIT}
         updateConfFiles ${key} ${CURRENT_MASTER_COMMIT}
       done
@@ -177,11 +151,7 @@ initConfFile
 cp -f ../Dockerfile-* /tmp
 cd /tmp
 #imageDelete
-if [ $(getBuildType) == "master" ]; then
-  autoBuildGitMaster
-else
-  autoBuildGitTag
-fi
+autoBuildGitMaster
 #imagePush ""
 #modifyImageTag
 #imagePush "latest"
