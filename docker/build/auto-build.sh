@@ -141,7 +141,7 @@ function imagePush() {
 }
 
 function imageDelete() {
-  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && sudo docker images --filter=reference="king607267/*:latest" --format "{{.ID}}") ; do
+  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && sudo docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:latest" --format "{{.ID}}") ; do
       docker rmi -f $i
   done
 }
@@ -150,10 +150,10 @@ start_time=$(date +%s)
 initConfFile
 cp -f ../Dockerfile-* /tmp
 cd /tmp
-#imageDelete
+imageDelete
 autoBuildGitMaster
 #imagePush ""
-#modifyImageTag
+modifyImageTag
 #imagePush "latest"
 end_time=$(date +%s)
 cost_time=$(($end_time - $start_time))

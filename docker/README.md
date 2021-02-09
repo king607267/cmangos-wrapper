@@ -3,7 +3,7 @@
 ###数据库
 使用Dockerfile-db构建镜像使用如下命令:
 ```shell
-sudo docker build --build-arg CMANGOS_CORE=classic -t cmangos-docker/cmangos-classic-realmd:1.0 -f Dockerfile-db .
+sudo docker build --build-arg CMANGOS_CORE=classic -t cmangos-docker/cmangos-classic-db:1.0 -f Dockerfile-db .
 ```
 ###认证登陆服务器
 使用Dockerfile-realmd构建镜像使用如下命令:
