@@ -217,7 +217,6 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     sed -i "s/^PASSWORD=.*$/PASSWORD=\"$MYSQL_PASSWORD\"/g" InstallFullDB.sh
     sed -i "s/^CORE_PATH=\"\"/CORE_PATH=\"\/${CMANGOS_SERVER_PATH}\"/" InstallFullDB.sh
 
-    touch InstallFullDB.config
     echo "DB_HOST=\"localhost\"" >>InstallFullDB.config
     echo "DB_PORT=\"3306\"" >>InstallFullDB.config
     echo "DATABASE="${CMANGOS_WORLD_DB}"" >>InstallFullDB.config

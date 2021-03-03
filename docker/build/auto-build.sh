@@ -141,7 +141,10 @@ function imagePush() {
 }
 
 function imageDelete() {
-  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && sudo docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:latest" --format "{{.ID}}") ; do
+  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:latest" --format "{{.ID}}") ; do
+      docker rmi -f $i
+  done
+    for i in $(docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:*" --format "{{.ID}}") ; do
       docker rmi -f $i
   done
 }
