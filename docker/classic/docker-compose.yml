@@ -13,6 +13,9 @@ services:
        MYSQL_PASSWORD: mangos
        MYSQL_USER: mangos
        TZ: Asia/Shanghai
+       REALM_IP: 127.0.0.1
+       REALM_PORT: 8085
+       REALM_NAME: MaNGOS
 
    realmd:
      depends_on:

@@ -28,9 +28,9 @@ function updateConfFiles() {
 function initGitRepo() {
   #1 判断是否有对应的文件夹
   if [ ! -d "$1" ]; then
-    git clone https://github.com/cmangos/$1.git && cd $1
+    git clone https://github.com/cmangos/$1.git --recursive --depth=1 && cd $1
   else
-    cd $1 && git pull --tags
+    cd $1 && git pull
   fi
 }
 
@@ -76,10 +76,10 @@ function buildImage() {
 declare -A DOCKER_REPO_NAMES
 DOCKER_REPO_NAMES["mangos-classic"]="classic-server,classic-realmd"
 DOCKER_REPO_NAMES["mangos-tbc"]="tbc-server,tbc-realmd"
-DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
+DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd"
 DOCKER_REPO_NAMES["classic-db"]="classic-db"
 DOCKER_REPO_NAMES["tbc-db"]="tbc-db"
-DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd"
+DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
 
 function autoBuildGitMaster() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
@@ -141,11 +141,11 @@ function imagePush() {
 }
 
 function imageDelete() {
-  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:latest" --format "{{.ID}}") ; do
-      docker rmi -f $i
+  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:latest" --format "{{.ID}}"); do
+    docker rmi -f $i
   done
-    for i in $(docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:*" --format "{{.ID}}") ; do
-      docker rmi -f $i
+  for i in $(docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:*" --format "{{.ID}}"); do
+    docker rmi -f $i
   done
 }
 

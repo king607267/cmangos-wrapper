@@ -229,6 +229,21 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
 
     ./InstallFullDB.sh
 
+    if [ "$REALM_IP" != "127.0.0.1" ]; then
+      echo "UPDATE ${CMANGOS_REALMD_DB}.realmlist SET ADDRESS='${REALM_IP}' WHERE ID=1;" | "${mysql[@]}"
+      echo "UPDATED REALM IP: ${REALM_IP}"
+    fi
+
+    if [ "$REALM_PORT" != "8085" ]; then
+      echo "UPDATE ${CMANGOS_REALMD_DB}.realmlist SET PORT='${REALM_PORT}' WHERE ID=1;" | "${mysql[@]}"
+      echo "UPDATED REALM PORT: ${REALM_PORT}"
+    fi
+
+    if [ "$REALM_NAME" != "MaNGOS" ]; then
+      echo "SET NAMES utf8;UPDATE ${CMANGOS_REALMD_DB}.realmlist SET NAME='${REALM_NAME}' WHERE ID=1;" | "${mysql[@]}"
+      echo "UPDATED REALM NAME: ${REALM_NAME}"
+    fi
+
     for f in /docker-entrypoint-initdb.d/*; do
       case "$f" in
       *.sh)
