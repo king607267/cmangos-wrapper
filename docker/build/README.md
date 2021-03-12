@@ -11,6 +11,6 @@
 [4]: https://docs.docker.com/get-docker "docker"
 
 ```shell
-sudo ./auto-build.sh
+git pull && sudo ./auto-build.sh [Docker ID] [password]
 ```
-执行后会自动生成一个配置文件记录本次构建的版本，下次构建时会对比版本如果没有变化则不会再次构建。
+需要指定两个参数，Docker hub ID和password执行后会自动构建镜像，构建完成会推送镜像到你的仓库。

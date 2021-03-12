@@ -7,11 +7,13 @@ ARG CMANGOS_CORE=classic
 ARG THREAD_COUNT="-j4"
 ARG CMAKE_VERSION="3.19.1"
 
+COPY cmake-${CMAKE_VERSION}-Linux-x86_64.sh ./
+COPY mangos-${CMANGOS_CORE}/sql ./mangos-${CMANGOS_CORE}/sql
+COPY mangos-${CMANGOS_CORE} ./mangos-${CMANGOS_CORE}
+
 RUN apt-get update -qq && \
-    apt-get install libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev cmake libboost-all-dev wget -y && \
-    wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh && \
+    apt-get install libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev cmake libboost-all-dev -y && \
     sh cmake-${CMAKE_VERSION}-Linux-x86_64.sh --skip-license --prefix=/usr && \
-    git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
     mkdir build && cd build && \
     cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_PLAYERBOT=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
     make ${THREAD_COUNT} && \

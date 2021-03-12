@@ -1,55 +1,15 @@
 #!/bin/bash
 set -eo pipefail
 
-CONFIG_FILE="auto-builder.config"
 HUB_DOCKER_USERNAME="king607267"
-
-function initConfFile() {
-  if [ ! -f ~/${CONFIG_FILE} ]; then
-    cat >~/${CONFIG_FILE} <<EOF
-#记录最后一次构建的版本号
-mangos-classic=00
-classic-db=00
-
-mangos-wotlk=00
-wotlk-db=00
-
-mangos-tbc=00
-tbc-db=00
-EOF
-  fi
-}
-
-function updateConfFiles() {
-  echo "updating... config file:"$1=$2
-  sed -i "s/^$1=.*$/$1=$2/" ~/${CONFIG_FILE}
-}
 
 function initGitRepo() {
   #1 判断是否有对应的文件夹
   if [ ! -d "$1" ]; then
-    git clone https://github.com/cmangos/$1.git --recursive --depth=1 && cd $1
+    git clone https://github.com/cmangos/"$1".git --recursive --depth=1 && cd "$1"
   else
-    cd $1 && git pull
+    cd "$1" && git pull
   fi
-}
-
-function getRepoCurrentTag() {
-  echo $(git tag --sort=-creatordate | awk '{if(NR==1) print}')
-}
-
-function getLastedCommit() {
-  line=$(grep -r "^$1=" ~/${CONFIG_FILE})
-  echo ${line#*=}
-}
-
-function getBuildType() {
-  line=$(grep -r "^build-type=" ~/${CONFIG_FILE})
-  echo ${line#*=}
-}
-
-function getRepoCurrentTagCommit() {
-  echo $(git log $(getRepoCurrentTag) -1 --pretty=format:'%h')
 }
 
 function getRepoCurrentMasterCommit() {
@@ -69,8 +29,8 @@ function buildImage() {
     TARGET="--target realmd"
     DOCKER_FILE_NAME="Dockerfile-server"
   fi
-  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ../${DOCKER_FILE_NAME} ."
-  docker build --build-arg CMANGOS_CORE=${1%-*} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ../${DOCKER_FILE_NAME} .
+  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
+  docker build --build-arg CMANGOS_CORE=${1%-*} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
 }
 
 declare -A DOCKER_REPO_NAMES
@@ -83,60 +43,34 @@ DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
 
 function autoBuildGitMaster() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
+    cd ~/autoBuildContext
     initGitRepo ${key}
-    #前当前版本和前一次不同需要构建
     CURRENT_MASTER_COMMIT=$(getRepoCurrentMasterCommit)
-    if [ $(getLastedCommit ${key}) != ${CURRENT_MASTER_COMMIT} ]; then
-      #获取server和realmd的docker repo
-      NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
-      for NAME in ${NAMES[*]}; do
-        buildImage ${NAME} ${CURRENT_MASTER_COMMIT}
-        checkImage ${NAME} ${CURRENT_MASTER_COMMIT}
-        updateConfFiles ${key} ${CURRENT_MASTER_COMMIT}
-      done
-    else
-      echo "${key} no build"
-    fi
     cd ..
+    #获取server和realmd的docker repo
+    NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
+    for NAME in ${NAMES[*]}; do
+      buildImage ${NAME} ${CURRENT_MASTER_COMMIT}
+    done
   done
-}
-
-declare -A DOCKER_IMAGES
-
-function checkImage() {
-  DOCKER_IMAGE_NAME="${HUB_DOCKER_USERNAME}/cmangos-$1"
-  DOCKER_IMAGE_IS_MATCH_TAR_FILE="false"
-  # 判断是否有镜像,存在时创建相应的容器实例
-  for i in [ $(docker images) ]; do
-    if [[ "$i" == "$2" ]]; then
-      DOCKER_IMAGE_IS_MATCH_TAR_FILE="true"
-      echo "${DOCKER_IMAGE_NAME} build success!"
-      DOCKER_IMAGES[${DOCKER_IMAGE_NAME}]=$2
-      break
-    fi
-  done
-  if [[ $DOCKER_IMAGE_IS_MATCH_TAR_FILE == "false" ]]; then
-    echo "${DOCKER_IMAGE_NAME} build fail exit!"
-    exit 1
-  fi
 }
 
 function modifyImageTag() {
-  for key in ${!DOCKER_IMAGES[*]}; do
-    echo "docker tag $key:${DOCKER_IMAGES[$key]} to  $key:latest"
-    docker tag $key:${DOCKER_IMAGES[$key]} $key:latest
+  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
+    REPO=${key%:*}
+    if [ "${key#*:}" == "latest" ]; then
+      continue
+    fi
+    echo "docker tag $key to ${REPO}:latest"
+    docker tag $key $REPO:latest
   done
 }
 
 function imagePush() {
-  for key in ${!DOCKER_IMAGES[*]}; do
-    if [ "$1" == "latest" ]; then
-      echo "docker push $key:latest to hub"
-      docker push $key:latest
-    else
-      echo "docker push $key:${DOCKER_IMAGES[$key]} to hub"
-      docker push $key:${DOCKER_IMAGES[$key]}
-    fi
+  docker login -u "$1" -p "$2" docker.io
+  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
+    echo "docker push $key to hub"
+    docker push $key
   done
 }
 
@@ -149,15 +83,21 @@ function imageDelete() {
   done
 }
 
+function initBuildContext() {
+  if [ ! -d ~/autoBuildContext ]; then
+    mkdir ~/autoBuildContext
+  fi
+  cp -f ../Dockerfile-* ~/autoBuildContext
+  wget -P ~/autoBuildContext --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/launch_mysql.sh -O ~/autoBuildContext/launch_mysql.sh
+  wget -P ~/autoBuildContext --no-check-certificate https://github.com/Kitware/CMake/releases/download/v3.19.1/cmake-3.19.1-Linux-x86_64.sh -nc
+}
+
 start_time=$(date +%s)
-initConfFile
-cp -f ../Dockerfile-* /tmp
-cd /tmp
-imageDelete
+initBuildContext
+#imageDelete
 autoBuildGitMaster
-#imagePush ""
+sleep 10
 modifyImageTag
-#imagePush "latest"
-end_time=$(date +%s)
-cost_time=$(($end_time - $start_time))
-echo "build time is $(($cost_time / 60))min $(($cost_time % 60))s"
+#imagePush "$@"
+cost_time=$(($(date +%s) - start_time))
+echo "build time is $((cost_time / 3600))hours $((cost_time % 3600 / 60))min $((cost_time % 3600 % 60))s"
