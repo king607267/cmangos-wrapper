@@ -45,7 +45,6 @@ function autoBuildGitMaster() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
     cd ~/autoBuildContext
     initGitRepo ${key}
-    sleep 8m
     CURRENT_MASTER_COMMIT=$(getRepoCurrentMasterCommit)
     #获取server和realmd的docker repo
     NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
@@ -56,10 +55,8 @@ function autoBuildGitMaster() {
   done
 }
 
-IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="king607267/*")
-
 function modifyImageTag() {
-  for key in ${IMAGES}; do
+  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
     REPO=${key%:*}
     if [ "${key#*:}" == "latest" ]; then
       continue
@@ -71,7 +68,7 @@ function modifyImageTag() {
 
 function imagePush() {
   docker login -u "$1" -p "$2" docker.io
-  for key in ${IMAGES}; do
+  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
     echo "docker push $key to hub"
     docker push $key
   done
@@ -99,10 +96,9 @@ function initBuildContext() {
 
 start_time=$(date +%s)
 initBuildContext
-imageDelete
+#imageDelete
 autoBuildGitMaster
-sleep 2
 modifyImageTag
-imagePush "$@"
+#imagePush "$@"
 cost_time=$(($(date +%s) - start_time))
 echo "build time is $((cost_time / 3600))hours $((cost_time % 3600 / 60))min $((cost_time % 3600 % 60))s"

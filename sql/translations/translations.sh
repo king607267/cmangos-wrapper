@@ -23,9 +23,9 @@ if [ -f "BroadcastTextLocales.sql" ]; then
   rm BroadcastTextLocales.sql
 fi
 if [ "${CMANGOS_CORE}" = "classic" ]; then
-  echo "classic does not supported BroadcastTextLocales."
+  echo "classic use tbc BroadcastTextLocales."
   CMANGOS_CORE=zero
-#https://raw.githubusercontent.com/cmangos/mangos-classic/master/sql/base/dbc/original_data/locales/BroadcastTextLocales.sql
+  wget --no-check-certificate https://raw.githubusercontent.com/cmangos/mangos-tbc/master/sql/base/dbc/original_data/locales/BroadcastTextLocales.sql
 elif [ "${CMANGOS_CORE}" = "tbc" ]; then
   wget --no-check-certificate https://raw.githubusercontent.com/cmangos/mangos-tbc/master/sql/base/dbc/original_data/locales/BroadcastTextLocales.sql
   CMANGOS_CORE=one
@@ -57,8 +57,8 @@ elif [ "${TRANSLATIONS}" = "Italian" ]; then
   LOCALE="itIT"
 else
   LOCALE="zhCN"
-
 fi
+
 echo "> Processing BroadcastTextLocales.sql."
 cp -f BroadcastTextLocales.sql BroadcastTextLocales_bak.sql
 sed -i "s/),(/);\nINSERT INTO \`broadcast_text_locale\` VALUES (/g" BroadcastTextLocales_bak.sql
