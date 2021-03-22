@@ -46,7 +46,11 @@ function autoBuildGitMaster() {
     cd ~/autoBuildContext
     initGitRepo ${key}
     CURRENT_MASTER_COMMIT=$(getRepoCurrentMasterCommit)
-    cd ..
+    cd ..    
+  	if [[ ${key} =~ "-db" ]]; then
+  		initGitRepo "mangos-${key%-*}"
+  		cd ..
+  	fi
     #获取server和realmd的docker repo
     NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
     for NAME in ${NAMES[*]}; do
