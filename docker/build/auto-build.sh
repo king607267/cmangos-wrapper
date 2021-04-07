@@ -2,6 +2,7 @@
 set -eo pipefail
 
 HUB_DOCKER_USERNAME="king607267"
+EXTRACTORS_FLAG=$3
 
 function initGitRepo() {
   #1 判断是否有对应的文件夹
@@ -25,6 +26,9 @@ function buildImage() {
   elif [[ $1 =~ "-server" ]]; then
     TARGET="--target mangosd"
     DOCKER_FILE_NAME="Dockerfile-server"
+  elif [[ $1 =~ "-extractors" ]]; then
+    TARGET="--target extractors"
+    DOCKER_FILE_NAME="Dockerfile-server"
   else
     TARGET="--target realmd"
     DOCKER_FILE_NAME="Dockerfile-server"
@@ -34,12 +38,12 @@ function buildImage() {
 }
 
 declare -A DOCKER_REPO_NAMES
-DOCKER_REPO_NAMES["mangos-classic"]="classic-server,classic-realmd"
-DOCKER_REPO_NAMES["mangos-tbc"]="tbc-server,tbc-realmd"
-DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd"
-DOCKER_REPO_NAMES["classic-db"]="classic-db"
-DOCKER_REPO_NAMES["tbc-db"]="tbc-db"
-DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
+DOCKER_REPO_NAMES["mangos-classic"]="classic-server,classic-realmd,classic-extractors"
+#DOCKER_REPO_NAMES["mangos-tbc"]="tbc-server,tbc-realmd,tbc-extractors"
+#DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd,wotlk-extractors"
+#DOCKER_REPO_NAMES["classic-db"]="classic-db"
+#DOCKER_REPO_NAMES["tbc-db"]="tbc-db"
+#DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
 
 function autoBuildGitMaster() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
@@ -49,8 +53,12 @@ function autoBuildGitMaster() {
     #获取server和realmd的docker repo
     NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
     for NAME in ${NAMES[*]}; do
+      if [ "${NAME}" == "classic-extractors" ] && [ "${EXTRACTORS_FLAG}" != "true" ]; then
+        echo "skip build extractors"
+        continue
+      fi
       cd ../file
-      buildImage ${NAME} ${CURRENT_MASTER_COMMIT}
+      buildImage "${NAME}" "${CURRENT_MASTER_COMMIT}"
     done
   done
 }
@@ -62,7 +70,7 @@ function modifyImageTag() {
       continue
     fi
     echo "docker tag $key to ${REPO}:latest"
-    docker tag $key $REPO:latest
+    docker tag "$key" "$REPO":latest
   done
 }
 
@@ -70,7 +78,7 @@ function imagePush() {
   docker login -u "$1" -p "$2" docker.io
   for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
     echo "docker push $key to hub"
-    docker push $key
+    docker push "$key"
   done
 }
 
@@ -88,7 +96,7 @@ function initBuildContext() {
     mkdir ~/autoBuildContext
   fi
 
-    if [ ! -d ~/autoBuildContext/file ]; then
+  if [ ! -d ~/autoBuildContext/file ]; then
     mkdir ~/autoBuildContext/file
   fi
   cp -f ../Dockerfile-* ~/autoBuildContext/file
