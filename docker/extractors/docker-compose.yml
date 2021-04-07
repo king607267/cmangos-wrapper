@@ -1,0 +1,20 @@
+version: '3.7'
+
+services:
+  classic_extractors:
+    image: king607267/cmangos-classic-extractors:latest
+    volumes:
+      - yourpath/:/output
+    restart: "no"
+
+  tbc_extractors:
+      image: king607267/cmangos-tbc-extractors:latest
+      volumes:
+        - yourpath/:/output
+      restart: "no"
+
+  wotlk_extractors:
+      image: king607267/cmangos-wotlk-extractors:latest
+      volumes:
+        - yourpath/:/output
+      restart: "no"

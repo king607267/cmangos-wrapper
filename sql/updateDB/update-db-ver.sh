@@ -1,11 +1,11 @@
 #!/bin/bash
 
 DB_HOST="127.0.0.1"
-DB_PORT="3306"
+DB_PORT="3380"
 USERNAME="mangos"
 PASSWORD="mangos"
 MYSQL="mysql"
-CMANGOS_CORE="classic"
+CMANGOS_CORE="wotlk"
 
 REPO_DIR="${CMANGOS_CORE}_core"
 
