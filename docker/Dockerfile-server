@@ -98,7 +98,7 @@ WORKDIR /etc/mangos/
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin/tools ./tools
 
 RUN echo "#!/bin/bash" >> run_cp_extractors.sh &&\
-    echo "mkdir -p /output/${CMANGOS_CORE}_extractors" >> run_cp_extractors.sh &&\
+    echo "mkdir -p /output/${CMANGOS_CORE}" >> run_cp_extractors.sh &&\
     echo "cp ./tools/* /output/${CMANGOS_CORE}" >> run_cp_extractors.sh &&\
     chmod u+x run_cp_extractors.sh
 
