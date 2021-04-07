@@ -8,15 +8,21 @@ sudo docker build --build-arg CMANGOS_CORE=classic -t cmangos-docker/cmangos-cla
 ```
 认证登陆服务器
 ------------
-使用Dockerfile-realmd构建镜像使用如下命令:
+使用Dockerfile-server构建镜像使用如下命令:
 ```shell
 sudo docker build --build-arg CMANGOS_CORE=classic -t cmangos-docker/cmangos-classic-realmd:1.0 --target realmd -f Dockerfile-server .
 ```
 游戏逻辑服务器
 ------------
-使用Dockerfile-mangosd构建镜像使用如下命令:
+使用Dockerfile-server构建镜像使用如下命令:
 ```shell
 sudo docker build --build-arg CMANGOS_CORE=classic -t cmangos-docker/cmangos-classic-server:1.0 --target mangosd -f Dockerfile-server .
+```
+地图提取器
+------------
+使用Dockerfile-server构建镜像使用如下命令:
+```shell
+sudo docker build --build-arg CMANGOS_CORE=classic -t cmangos-docker/cmangos-classic-extractors:1.0 --target extractors -f Dockerfile-server .
 ```
 提示
 ------------
