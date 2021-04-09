@@ -8,7 +8,6 @@ ARG THREAD_COUNT="-j4"
 ARG CMAKE_VERSION="3.19.1"
 
 COPY cmake-${CMAKE_VERSION}-Linux-x86_64.sh ./
-COPY mangos-${CMANGOS_CORE}/sql ./mangos-${CMANGOS_CORE}/sql
 COPY mangos-${CMANGOS_CORE} ./mangos-${CMANGOS_CORE}
 
 RUN apt-get update -qq && \
