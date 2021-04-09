@@ -82,7 +82,7 @@ RUN echo "#!/bin/bash" >> run_cmangos.sh &&\
     echo "sed -i \"s/LOGIN_DATABASE_INFO/\$LOGIN_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/WORLD_DATABASE_INFO/\$WORLD_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/CHARACTER_DATABASE_INFO/\$CHARACTER_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
-    echo "/etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf" >> run_cmangos.sh &&\
+    echo "/etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf -p /etc/mangos/conf/playerbot.conf" >> run_cmangos.sh &&\
     chmod u+x run_cmangos.sh && \
     chown -R mangos:mangos .
 
