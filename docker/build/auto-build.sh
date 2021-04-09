@@ -53,7 +53,7 @@ function autoBuildGitMaster() {
     #获取server和realmd的docker repo
     NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
     for NAME in ${NAMES[*]}; do
-      if [ "${NAME}" == "classic-extractors" ] && [ "${EXTRACTORS_FLAG}" != "true" ]; then
+      if [[ "${NAME}" =~ "-extractors" ]] && [ "${EXTRACTORS_FLAG}" != "true" ]; then
         echo "skip build extractors"
         continue
       fi
