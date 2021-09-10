@@ -100,7 +100,7 @@ function initBuildContext() {
     mkdir ~/autoBuildContext
   fi
   cp -f ../Dockerfile-* ~/autoBuildContext
-  wget -P ~/autoBuildContext --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/launch_mysql.sh -O ~/autoBuildContext/launch_mysql.sh
+  wget -P ~/autoBuildContext --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/feature-buildImagesUseLocalRepo/docker/launch_mysql.sh -O ~/autoBuildContext/launch_mysql.sh
   wget -P ~/autoBuildContext --no-check-certificate https://github.com/Kitware/CMake/releases/download/v3.19.1/cmake-3.19.1-Linux-x86_64.sh -nc
 }
 
