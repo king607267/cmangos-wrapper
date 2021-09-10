@@ -48,4 +48,5 @@ services:
        LOGIN_DATABASE_INFO: db;3306;mangos;mangos;tbcrealmd
        WORLD_DATABASE_INFO: db;3306;mangos;mangos;tbcmangos
        CHARACTER_DATABASE_INFO: db;3306;mangos;mangos;tbccharacters
+       LOGS_DATABASE_INFO: db;3306;mangos;mangos;tbclogs
        TZ: Asia/Shanghai

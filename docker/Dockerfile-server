@@ -59,6 +59,7 @@ ENV CMANGOS_CORE=${CMANGOS_CORE}
 ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}realmd
 ENV WORLD_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}mangos
 ENV CHARACTER_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}characters
+ENV LOGS_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}logs
 
 WORKDIR /etc/mangos/
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin ./bin
@@ -73,6 +74,7 @@ RUN apt-get -y update && apt-get -y upgrade && \
     sed -i 's/^LoginDatabaseInfo     =.*$/LoginDatabaseInfo     = LOGIN_DATABASE_INFO/' conf/mangosd.conf && \
     sed -i 's/^WorldDatabaseInfo     =.*$/WorldDatabaseInfo     = WORLD_DATABASE_INFO/' conf/mangosd.conf && \
     sed -i 's/^CharacterDatabaseInfo =.*$/CharacterDatabaseInfo = CHARACTER_DATABASE_INFO/' conf/mangosd.conf && \
+    sed -i 's/^LogsDatabaseInfo      =.*$/LogsDatabaseInfo      = LOGS_DATABASE_INFO/' conf/mangosd.conf && \
     sed -i 's/^DataDir = "."/DataDir = "\/etc\/mangos"/' conf/mangosd.conf && \
     rm /etc/mangos/bin/realmd && \
     rm /etc/mangos/conf/realmd* && \
@@ -82,6 +84,7 @@ RUN echo "#!/bin/bash" >> run_cmangos.sh &&\
     echo "sed -i \"s/LOGIN_DATABASE_INFO/\$LOGIN_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/WORLD_DATABASE_INFO/\$WORLD_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/CHARACTER_DATABASE_INFO/\$CHARACTER_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
+    echo "sed -i \"s/LOGS_DATABASE_INFO/\$LOGS_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "/etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf -p /etc/mangos/conf/playerbot.conf" >> run_cmangos.sh &&\
     chmod u+x run_cmangos.sh && \
     chown -R mangos:mangos .
