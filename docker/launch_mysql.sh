@@ -160,24 +160,28 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     CMANGOS_WORLD_DB=""
     CMANGOS_CHARACTER_DB=""
     CMANGOS_REALMD_DB=""
+    CMANGOS_LOGS_DB=""
     CMANGOS_SERVER_PATH=""
     CMANGOS_DB_FILE_PATH=""
     if [ "$CMANGOS_CORE" = "classic" ]; then
       CMANGOS_WORLD_DB=classicmangos
       CMANGOS_CHARACTER_DB=classiccharacters
       CMANGOS_REALMD_DB=classicrealmd
+      CMANGOS_LOGS_DB=classiclogs
       CMANGOS_SERVER_PATH=mangos-classic
       CMANGOS_DB_FILE_PATH=classic-db
     elif [ "$CMANGOS_CORE" = "tbc" ]; then
       CMANGOS_WORLD_DB=tbcmangos
       CMANGOS_CHARACTER_DB=tbccharacters
       CMANGOS_REALMD_DB=tbcrealmd
+      CMANGOS_LOGS_DB=tbclogs
       CMANGOS_SERVER_PATH=mangos-tbc
       CMANGOS_DB_FILE_PATH=tbc-db
     elif [ "$CMANGOS_CORE" = "wotlk" ]; then
       CMANGOS_WORLD_DB=wotlkmangos
       CMANGOS_CHARACTER_DB=wotlkcharacters
       CMANGOS_REALMD_DB=wotlkrealmd
+      CMANGOS_LOGS_DB=wotlklogs
       CMANGOS_SERVER_PATH=mangos-wotlk
       CMANGOS_DB_FILE_PATH=wotlk-db
     fi
@@ -185,6 +189,7 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     echo "CREATE DATABASE \`${CMANGOS_WORLD_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
     echo "CREATE DATABASE \`${CMANGOS_CHARACTER_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
     echo "CREATE DATABASE \`${CMANGOS_REALMD_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
+    echo "CREATE DATABASE \`${CMANGOS_LOGS_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
 
     "${mysql[@]}" -D${CMANGOS_WORLD_DB} </"${CMANGOS_SERVER_PATH}"/sql/base/mangos.sql
     echo "WORLD DATABASE CREATED."
@@ -197,6 +202,10 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     "${mysql[@]}" -D${CMANGOS_REALMD_DB} </"${CMANGOS_SERVER_PATH}"/sql/base/realmd.sql
     echo "REALM DATABASE CREATED."
 
+    echo "LOGS DATABASE CREATION..."
+    "${mysql[@]}" -D${CMANGOS_LOGS_DB} </"${CMANGOS_SERVER_PATH}"/sql/base/logs.sql
+    echo "LOGS DATABASE CREATED."
+
     echo "MYSQL_USER CREATION..."
     file_env 'MYSQL_USER'
     file_env 'MYSQL_PASSWORD'
@@ -205,6 +214,7 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
       echo "GRANT ALL ON \`${CMANGOS_WORLD_DB}\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
       echo "GRANT ALL ON \`${CMANGOS_CHARACTER_DB}\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
       echo "GRANT ALL ON \`${CMANGOS_REALMD_DB}\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
+      echo "GRANT ALL ON \`${CMANGOS_LOGS_DB}\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
 
       echo 'FLUSH PRIVILEGES ;' | "${mysql[@]}"
     fi
