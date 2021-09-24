@@ -25,12 +25,12 @@ fi
 if [ "${CMANGOS_CORE}" = "classic" ]; then
   echo "classic use tbc BroadcastTextLocales."
   CMANGOS_CORE=zero
-  wget --no-check-certificate https://raw.githubusercontent.com/cmangos/mangos-tbc/master/sql/base/dbc/original_data/locales/BroadcastTextLocales.sql
+  wget --no-check-certificate https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql
 elif [ "${CMANGOS_CORE}" = "tbc" ]; then
-  wget --no-check-certificate https://raw.githubusercontent.com/cmangos/mangos-tbc/master/sql/base/dbc/original_data/locales/BroadcastTextLocales.sql
+  wget --no-check-certificate https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql
   CMANGOS_CORE=one
 elif [ "${CMANGOS_CORE}" = "wotlk" ]; then
-  wget --no-check-certificate https://raw.githubusercontent.com/cmangos/mangos-wotlk/master/sql/base/dbc/original_data/locales/BroadcastTextLocales.sql
+  wget --no-check-certificate https://raw.githubusercontent.com/cmangos/wotlk-db/master/locales/BroadcastTextLocales.sql
   CMANGOS_CORE=two
 fi
 
