@@ -24,14 +24,14 @@ if [ -f "BroadcastTextLocales.sql" ]; then
 fi
 if [ "${CMANGOS_CORE}" = "classic" ]; then
   echo "classic use tbc BroadcastTextLocales."
-  CMANGOS_CORE=zero
+  CMANGOS_CORE="zero"
   wget --no-check-certificate https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql
 elif [ "${CMANGOS_CORE}" = "tbc" ]; then
   wget --no-check-certificate https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql
-  CMANGOS_CORE=one
+  CMANGOS_CORE="one"
 elif [ "${CMANGOS_CORE}" = "wotlk" ]; then
   wget --no-check-certificate https://raw.githubusercontent.com/cmangos/wotlk-db/master/locales/BroadcastTextLocales.sql
-  CMANGOS_CORE=two
+  CMANGOS_CORE="two"
 fi
 
 export MYSQL_PWD="${PASSWORD}"
@@ -87,6 +87,19 @@ sed -i '/^        ALTER.*\(command\).*/,/;$/s/^/-- &/' 1+2+3.sql
 sed -i '/^UPDATE.*\(command\).*/,/;$/s/^/-- &/' 1+2+3.sql
 #替换表名
 sed -i 's/db_script/dbscript/' 1+2+3.sql
+
+#https://github.com/cmangos/mangos-tbc/pull/486
+#注释creature_ai_texts,dbscript_string相关sql
+if [ "${CMANGOS_CORE}" = "one" ]; then
+  sed -i 's/^INSERT.*\(creature_ai_texts\).*$/-- &/' 1+2+3.sql
+  sed -i '/^        ALTER.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' 1+2+3.sql
+  sed -i '/^UPDATE.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' 1+2+3.sql
+
+  sed -i 's/^INSERT.*\(dbscript_string\).*$/-- &/' 1+2+3.sql
+  sed -i '/^        ALTER.*\(dbscript_string\).*/,/;$/s/^/-- &/' 1+2+3.sql
+  sed -i '/^UPDATE.*\(dbscript_string\).*/,/;$/s/^/-- &/' 1+2+3.sql
+fi
+
 ${MYSQL_COMMAND} <1+2+3.sql
 
 cd Translations/${TRANSLATIONS}
@@ -95,7 +108,13 @@ echo "> Processing Translations SQL."
 if [ -f full.sql ]; then
   rm full.sql
 fi
-cat *.sql >full.sql
+#https://github.com/cmangos/mangos-tbc/pull/486
+if [ "${CMANGOS_CORE}" = "one" ]; then
+  echo "tbc...setup"
+  cat $(ls -I "*db_script_string.sql" -I "*Creature_AI_Texts.sql" | grep ".*\.sql") >full.sql
+else
+  cat *.sql >full.sql
+fi
 sed -i 's/db_script/dbscript/' full.sql
 ${MYSQL_COMMAND} <full.sql
 echo "Translations end."
