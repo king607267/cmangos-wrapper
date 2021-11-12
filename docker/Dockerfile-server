@@ -6,6 +6,7 @@ ARG CMANGOS_SERVER_BRANCH=master
 ARG CMANGOS_CORE=classic
 ARG THREAD_COUNT="-j4"
 ARG CMAKE_VERSION="3.19.1"
+ENV TZ Asia/Shanghai
 
 COPY cmake-${CMAKE_VERSION}-Linux-x86_64.sh ./
 COPY mangos-${CMANGOS_CORE} ./mangos-${CMANGOS_CORE}
@@ -26,6 +27,7 @@ EXPOSE 3724
 ARG CMANGOS_CORE
 ENV CMANGOS_CORE=${CMANGOS_CORE}
 ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}realmd
+ENV TZ Asia/Shanghai
 
 WORKDIR /etc/mangos/
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin ./bin
@@ -60,6 +62,7 @@ ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}realmd
 ENV WORLD_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}mangos
 ENV CHARACTER_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}characters
 ENV LOGS_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}logs
+ENV TZ Asia/Shanghai
 
 WORKDIR /etc/mangos/
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin ./bin
@@ -98,6 +101,7 @@ MAINTAINER wangjueming <king607267@gmail.com>
 
 ARG CMANGOS_CORE
 ENV CMANGOS_CORE=${CMANGOS_CORE}
+ENV TZ Asia/Shanghai
 
 WORKDIR /etc/mangos/
 
