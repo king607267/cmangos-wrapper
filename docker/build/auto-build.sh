@@ -33,6 +33,8 @@ function buildImage() {
     TARGET="--target realmd"
     DOCKER_FILE_NAME="Dockerfile-server"
   fi
+  #https://stackoverflow.com/questions/22179301/how-do-you-run-apt-get-in-a-dockerfile-behind-a-proxy
+  #export DOCKER_CONFIG=~/.docker
   echo " docker build --build-arg CMANGOS_CORE=${1%-*} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
   docker build --build-arg CMANGOS_CORE=${1%-*} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
 }
