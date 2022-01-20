@@ -1,18 +1,18 @@
 #default classic
 ARG CMANGOS_CORE=classic
 
-FROM ubuntu:18.04 as build-step
+FROM ubuntu:20.04 as build-step
 ARG CMANGOS_SERVER_BRANCH=master
 ARG CMANGOS_CORE=classic
 ARG THREAD_COUNT="-j4"
-ARG CMAKE_VERSION="3.19.1"
+ARG CMAKE_VERSION="3.22.0"
 ENV TZ Asia/Shanghai
 
 COPY cmake-${CMAKE_VERSION}-Linux-x86_64.sh ./
 COPY mangos-${CMANGOS_CORE} ./mangos-${CMANGOS_CORE}
 
 RUN apt-get update -qq && \
-    apt-get install libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev cmake libboost-all-dev -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev cmake libboost-all-dev -y && \
     sh cmake-${CMAKE_VERSION}-Linux-x86_64.sh --skip-license --prefix=/usr && \
     mkdir build && cd build && \
     cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_EXTRACTORS=ON -DBUILD_PLAYERBOT=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
@@ -20,7 +20,7 @@ RUN apt-get update -qq && \
     make install ${THREAD_COUNT}
 
 #Runtime image realmd
-FROM ubuntu:18.04 as realmd
+FROM ubuntu:20.04 as realmd
 MAINTAINER wangjueming <king607267@gmail.com>
 
 EXPOSE 3724
@@ -34,7 +34,7 @@ COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin ./bin
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 
 RUN apt-get -y update && apt-get -y upgrade && \
-    apt-get -y install libmysqlclient20 openssl && \
+    apt-get -y install libmysqlclient-dev openssl && \
     useradd -ms /bin/bash realm && \
     mv conf/realmd.conf.dist conf/realmd.conf && \
     sed -i 's/^LoginDatabaseInfo =.*$/LoginDatabaseInfo = LOGIN_DATABASE_INFO/' conf/realmd.conf && \
@@ -52,7 +52,7 @@ USER realm
 CMD ["./run_realmd.sh"]
 
 #Runtime image mangosd
-FROM ubuntu:18.04 as mangosd
+FROM ubuntu:20.04 as mangosd
 MAINTAINER wangjueming <king607267@gmail.com>
 
 EXPOSE 8085
@@ -70,7 +70,7 @@ COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 COPY --from=build-step /mangos-${CMANGOS_CORE}/src/game/AuctionHouseBot/ahbot.conf.dist.in ./conf/ahbot.conf
 
 RUN apt-get -y update && apt-get -y upgrade && \
-    apt-get -y install libmysqlclient20 openssl && \
+    apt-get -y install libmysqlclient-dev openssl && \
     useradd -ms /bin/bash mangos && \
     mv conf/playerbot.conf.dist conf/playerbot.conf && \
     mv conf/mangosd.conf.dist conf/mangosd.conf && \
@@ -96,7 +96,7 @@ USER mangos
 CMD ["./run_cmangos.sh"]
 
 #Runtime image extractors
-FROM ubuntu:18.04 as extractors
+FROM ubuntu:20.04 as extractors
 MAINTAINER wangjueming <king607267@gmail.com>
 
 ARG CMANGOS_CORE
