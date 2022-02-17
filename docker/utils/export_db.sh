@@ -31,5 +31,5 @@ function exportDB() {
   fi
 }
 exportDB '60'
-#exportDB '70'
-#exportDB '80'
+exportDB '70'
+exportDB '80'
