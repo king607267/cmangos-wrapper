@@ -236,6 +236,7 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     echo "MYSQL=\"mysql\"" >>InstallFullDB.config
     echo "FORCE_WAIT=\"YES\"" >>InstallFullDB.config
     echo "AHBOT=\"NO\"" >>InstallFullDB.config
+    echo "MYSQL_PATH=\"$(type -P "mysql" 2> /dev/null)\"" >>InstallFullDB.config
 
     ./InstallFullDB.sh
 
