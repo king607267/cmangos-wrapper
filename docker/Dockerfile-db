@@ -19,6 +19,7 @@ ENV REALM_NAME=MaNGOS
 
 COPY launch_mysql.sh ./
 COPY mangos-${CMANGOS_CORE}/sql ./mangos-${CMANGOS_CORE}/sql
+COPY mangos-${CMANGOS_CORE}/src/shared/revision_sql.h ./mangos-${CMANGOS_CORE}/src/shared/revision_sql.h
 COPY ${CMANGOS_CORE}-db/ACID ./${CMANGOS_CORE}-db/ACID
 COPY ${CMANGOS_CORE}-db/Full_DB ./${CMANGOS_CORE}-db/Full_DB
 COPY ${CMANGOS_CORE}-db/Updates ./${CMANGOS_CORE}-db/Updates
