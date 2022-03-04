@@ -24,7 +24,7 @@ COPY ${CMANGOS_CORE}-db/ACID ./${CMANGOS_CORE}-db/ACID
 COPY ${CMANGOS_CORE}-db/Full_DB ./${CMANGOS_CORE}-db/Full_DB
 COPY ${CMANGOS_CORE}-db/Updates ./${CMANGOS_CORE}-db/Updates
 COPY ${CMANGOS_CORE}-db/utilities ./${CMANGOS_CORE}-db/utilities
-COPY ${CMANGOS_CORE}-db/InstallFullDB.sh ./${CMANGOS_CORE}-db/InstallFullDB.sh
+COPY ${CMANGOS_CORE}-InstallFullDB.sh ./${CMANGOS_CORE}-db/InstallFullDB.sh
 
 RUN chmod -R a+x,a+w,a+r ./${CMANGOS_CORE}-db && chmod a+x launch_mysql.sh
 

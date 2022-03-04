@@ -103,6 +103,9 @@ function initBuildContext() {
   fi
   cp -f ../Dockerfile-* ~/autoBuildContext
   wget -P ~/autoBuildContext --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/feature-buildImagesUseLocalRepo/docker/launch_mysql.sh -O ~/autoBuildContext/launch_mysql.sh
+  wget -P ~/autoBuildContext --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/feature-buildImagesUseLocalRepo/docker/classic-InstallFullDB.sh -O ~/autoBuildContext/classic-InstallFullDB.sh
+  wget -P ~/autoBuildContext --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/feature-buildImagesUseLocalRepo/docker/tbc-InstallFullDB.sh -O ~/autoBuildContext/tbc-InstallFullDB.sh
+  wget -P ~/autoBuildContext --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/feature-buildImagesUseLocalRepo/docker/wotlk-InstallFullDB.sh -O ~/autoBuildContext/wotlk-InstallFullDB.sh
   wget -P ~/autoBuildContext --no-check-certificate https://github.com/Kitware/CMake/releases/download/v3.22.0/cmake-3.22.0-Linux-x86_64.sh -nc
 }
 
