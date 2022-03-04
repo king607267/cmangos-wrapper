@@ -238,7 +238,7 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     echo "AHBOT=\"NO\"" >>InstallFullDB.config
     echo "MYSQL_PATH=\"$(type -P "mysql" 2> /dev/null)\"" >>InstallFullDB.config
 
-    ./InstallFullDB.sh
+    ./"$CMANGOS_CORE"-InstallFullDB.sh
 
     if [ "$REALM_IP" != "127.0.0.1" ]; then
       echo "UPDATE ${CMANGOS_REALMD_DB}.realmlist SET ADDRESS='${REALM_IP}' WHERE ID=1;" | "${mysql[@]}"
