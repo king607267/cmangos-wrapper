@@ -29,7 +29,7 @@ RUN apt-get update -qq && \
     rm -rf .git && \
     cd ../${CMANGOS_CORE}-db && \
     #Overwrite InstallFullDB.sh
-    wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/{CMANGOS_CORE}-InstallFullDB.sh -O InstallFullDB.sh && \
+    wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/${CMANGOS_CORE}-InstallFullDB.sh -O InstallFullDB.sh && \
     rm -rf `ls |egrep -v '(ACID|Full_DB|Updates|utilities|InstallFullDB.sh)'` && \
     rm -rf .git && \
     cd .. && \
