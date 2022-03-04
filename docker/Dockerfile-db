@@ -25,6 +25,8 @@ RUN apt-get update -qq && \
     git clone https://github.com/cmangos/${CMANGOS_CORE}-db.git -b ${CMANGOS_DATABASE_BRANCH} --recursive --depth=1 && \
     wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/launch_mysql.sh && \
     cd ./mangos-${CMANGOS_CORE} && \
+    #Overwrite InstallFullDB.sh
+    wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/{CMANGOS_CORE}-InstallFullDB.sh -O InstallFullDB.sh&& \
     rm -rf `ls |egrep -v '(sql)'` && \
     rm -rf .git && \
     cd ../${CMANGOS_CORE}-db && \
