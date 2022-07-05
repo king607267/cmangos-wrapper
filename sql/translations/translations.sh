@@ -89,18 +89,14 @@ sed -i '/^UPDATE.*\(command\).*/,/;$/s/^/-- &/' 1+2+3.sql
 sed -i 's/db_script/dbscript/' 1+2+3.sql
 
 #https://github.com/cmangos/issues/issues/2331
-#https://github.com/cmangos/mangos-tbc/pull/486
 #注释creature_ai_texts,dbscript_string相关sql
-if [[ "${CMANGOS_CORE}" = "one" || "${CMANGOS_CORE}" = "two" ]]; then
-  echo "tbc,wotlk...setup1"
-  sed -i 's/^INSERT.*\(creature_ai_texts\).*$/-- &/' 1+2+3.sql
-  sed -i '/^        ALTER.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' 1+2+3.sql
-  sed -i '/^UPDATE.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' 1+2+3.sql
+sed -i 's/^INSERT.*\(creature_ai_texts\).*$/-- &/' 1+2+3.sql
+sed -i '/^        ALTER.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' 1+2+3.sql
+sed -i '/^UPDATE.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' 1+2+3.sql
 
-  sed -i 's/^INSERT.*\(dbscript_string\).*$/-- &/' 1+2+3.sql
-  sed -i '/^        ALTER.*\(dbscript_string\).*/,/;$/s/^/-- &/' 1+2+3.sql
-  sed -i '/^UPDATE.*\(dbscript_string\).*/,/;$/s/^/-- &/' 1+2+3.sql
-fi
+sed -i 's/^INSERT.*\(dbscript_string\).*$/-- &/' 1+2+3.sql
+sed -i '/^        ALTER.*\(dbscript_string\).*/,/;$/s/^/-- &/' 1+2+3.sql
+sed -i '/^UPDATE.*\(dbscript_string\).*/,/;$/s/^/-- &/' 1+2+3.sql
 
 ${MYSQL_COMMAND} <1+2+3.sql
 
@@ -111,13 +107,7 @@ if [ -f full.sql ]; then
   rm full.sql
 fi
 #https://github.com/cmangos/issues/issues/2331
-#https://github.com/cmangos/mangos-tbc/pull/486
-if [[ "${CMANGOS_CORE}" = "one" || "${CMANGOS_CORE}" = "two" ]]; then
-  echo "tbc,wotlk...setup2"
-  cat $(ls -I "*db_script_string.sql" -I "*Creature_AI_Texts.sql" -I "*creature_ai_texts.sql" | grep ".*\.sql") >full.sql
-else
-  cat *.sql >full.sql
-fi
+cat $(ls -I "Chinese_CommandHelp.sql" -I "*db_script_string.sql" -I "*Creature_AI_Texts.sql" -I "*creature_ai_texts.sql" | grep ".*\.sql") >full.sql
 sed -i 's/db_script/dbscript/' full.sql
 ${MYSQL_COMMAND} <full.sql
 echo "Translations end."
