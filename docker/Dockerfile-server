@@ -3,18 +3,19 @@ ARG CMANGOS_CORE=classic
 
 FROM ubuntu:20.04 as build-step
 ARG CMANGOS_SERVER_BRANCH=master
+
 ARG CMANGOS_CORE=classic
 ARG THREAD_COUNT="-j4"
 ARG CMAKE_VERSION="3.22.0"
 ENV TZ Asia/Shanghai
+ARG REVISION_NUM
 
-RUN apt-get update -qq && \
-    DEBIAN_FRONTEND=noninteractive apt-get install tzdata libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev cmake libboost-all-dev wget -y && \
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev cmake libboost-all-dev wget -y && \
     wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh && \
     sh cmake-${CMAKE_VERSION}-Linux-x86_64.sh --skip-license --prefix=/usr && \
     git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
     mkdir build && cd build && \
-    cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_EXTRACTORS=ON -DBUILD_PLAYERBOT=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
+    cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_EXTRACTORS=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
     make ${THREAD_COUNT} && \
     make install ${THREAD_COUNT}
 
@@ -32,14 +33,13 @@ WORKDIR /etc/mangos/
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin ./bin
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 
-RUN apt-get -y update && apt-get -y upgrade && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev openssl && \
-    useradd -ms /bin/bash realm && \
+RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev openssl && rm -rf /var/lib/apt/lists/*
+RUN useradd -ms /bin/bash realm && \
     mv conf/realmd.conf.dist conf/realmd.conf && \
     sed -i 's/^LoginDatabaseInfo =.*$/LoginDatabaseInfo = LOGIN_DATABASE_INFO/' conf/realmd.conf && \
     rm /etc/mangos/bin/mangosd && \
-    rm /etc/mangos/conf/mangosd* && \
-    rm -rf /var/lib/apt/lists/*
+    rm /etc/mangos/conf/mangosd*
+
 
 RUN echo "#!/bin/bash" >> run_realmd.sh &&\
     echo "sed -i \"s/LOGIN_DATABASE_INFO/\$LOGIN_DATABASE_INFO/g\" /etc/mangos/conf/realmd.conf" >> run_realmd.sh && \
@@ -68,10 +68,8 @@ COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin ./bin
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 COPY --from=build-step /mangos-${CMANGOS_CORE}/src/game/AuctionHouseBot/ahbot.conf.dist.in ./conf/ahbot.conf
 
-RUN apt-get -y update && apt-get -y upgrade && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev openssl && \
-    useradd -ms /bin/bash mangos && \
-    mv conf/playerbot.conf.dist conf/playerbot.conf && \
+RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev openssl && rm -rf /var/lib/apt/lists/*
+RUN useradd -ms /bin/bash mangos && \
     mv conf/mangosd.conf.dist conf/mangosd.conf && \
     sed -i 's/^LoginDatabaseInfo     =.*$/LoginDatabaseInfo     = LOGIN_DATABASE_INFO/' conf/mangosd.conf && \
     sed -i 's/^WorldDatabaseInfo     =.*$/WorldDatabaseInfo     = WORLD_DATABASE_INFO/' conf/mangosd.conf && \
@@ -79,15 +77,14 @@ RUN apt-get -y update && apt-get -y upgrade && \
     sed -i 's/^LogsDatabaseInfo      =.*$/LogsDatabaseInfo      = LOGS_DATABASE_INFO/' conf/mangosd.conf && \
     sed -i 's/^DataDir = "."/DataDir = "\/etc\/mangos"/' conf/mangosd.conf && \
     rm /etc/mangos/bin/realmd && \
-    rm /etc/mangos/conf/realmd* && \
-    rm -rf /var/lib/apt/lists/*
+    rm /etc/mangos/conf/realmd*
 
 RUN echo "#!/bin/bash" >> run_cmangos.sh &&\
     echo "sed -i \"s/LOGIN_DATABASE_INFO/\$LOGIN_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/WORLD_DATABASE_INFO/\$WORLD_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/CHARACTER_DATABASE_INFO/\$CHARACTER_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/LOGS_DATABASE_INFO/\$LOGS_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
-    echo "exec /etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf -p /etc/mangos/conf/playerbot.conf" >> run_cmangos.sh &&\
+    echo "exec /etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf" >> run_cmangos.sh &&\
     chmod u+x run_cmangos.sh && \
     chown -R mangos:mangos .
 
