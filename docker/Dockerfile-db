@@ -19,7 +19,10 @@ RUN git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS
 FROM netdata/wget as dowloadFile
 ARG CMANGOS_CORE=classic
 RUN wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/launch_mysql.sh && \
-    wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/${CMANGOS_CORE}-InstallFullDB.sh -O InstallFullDB.sh
+    wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/${CMANGOS_CORE}-InstallFullDB.sh -O InstallFullDB.sh && \
+    wget --no-check-certificate https://raw.githubusercontent.com/cmangos/${CMANGOS_CORE}-db/master/InstallFullDB.sh -O InstallFullDB_tmp.sh && \
+    FULLDB_FILE_ZIP=`cat InstallFullDB_tmp.sh | grep 'FULLDB_FILE_ZIP="' | awk -F "\"" '{print $2}'` && \
+    sed -i 's/^FULLDB_FILE_ZIP=\".*$/FULLDB_FILE_ZIP="'$FULLDB_FILE_ZIP'"/' InstallFullDB.sh
 
 
 FROM mysql:5.7.37
