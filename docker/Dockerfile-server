@@ -1,7 +1,7 @@
 #default classic
 ARG CMANGOS_CORE=classic
 
-FROM ubuntu:20.04 as build-step
+FROM ubuntu:22.04 as build-step
 ARG CMANGOS_SERVER_BRANCH=master
 
 ARG CMANGOS_CORE=classic
@@ -10,9 +10,9 @@ ARG CMAKE_VERSION="3.22.0"
 ENV TZ Asia/Shanghai
 ARG REVISION_NUM
 
-RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata libmysql++-dev mysql-server build-essential gcc g++ automake git-core autoconf make patch libtool libssl-dev grep binutils zlibc libc6 libbz2-dev cmake libboost-all-dev wget -y && \
-    wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh && \
-    sh cmake-${CMAKE_VERSION}-Linux-x86_64.sh --skip-license --prefix=/usr && \
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata build-essential gcc g++ automake git-core autoconf make patch libmysql++-dev mysql-server libtool libssl-dev grep binutils zlib1g-dev libbz2-dev cmake libboost-all-dev wget -y && \
+    apt install g++-12 -y && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12 --slave /usr/bin/g++ g++ /usr/bin/g++-12 && \
     git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
     mkdir build && cd build && \
     cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_EXTRACTORS=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
@@ -20,7 +20,7 @@ RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata 
     make install ${THREAD_COUNT}
 
 #Runtime image realmd
-FROM ubuntu:20.04 as realmd
+FROM ubuntu:22.04 as realmd
 MAINTAINER wangjueming <king607267@gmail.com>
 
 EXPOSE 3724
@@ -51,7 +51,7 @@ USER realm
 CMD ["./run_realmd.sh"]
 
 #Runtime image mangosd
-FROM ubuntu:20.04 as mangosd
+FROM ubuntu:22.04 as mangosd
 MAINTAINER wangjueming <king607267@gmail.com>
 
 EXPOSE 8085
@@ -92,7 +92,7 @@ USER mangos
 CMD ["./run_cmangos.sh"]
 
 #Runtime image extractors
-FROM ubuntu:20.04 as extractors
+FROM ubuntu:22.04 as extractors
 MAINTAINER wangjueming <king607267@gmail.com>
 
 ARG CMANGOS_CORE
