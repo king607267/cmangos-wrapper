@@ -21,6 +21,7 @@ function buildImage() {
   #构建
   DOCKER_FILE_NAME=""
   TARGET=""
+  ARCHITECTURE=""
   if [[ $1 =~ "-db" ]]; then
     DOCKER_FILE_NAME="Dockerfile-db"
   elif [[ $1 =~ "-server" ]]; then
@@ -33,10 +34,13 @@ function buildImage() {
     TARGET="--target realmd"
     DOCKER_FILE_NAME="Dockerfile-server"
   fi
+  if [[ `uname -p` == "aarch64" ]]; then
+    ARCHITECTURE="-aarch64"
+  fi
   #https://stackoverflow.com/questions/22179301/how-do-you-run-apt-get-in-a-dockerfile-behind-a-proxy
   #export DOCKER_CONFIG=~/.docker
-  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
-  docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
+  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
+  docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
 }
 
 declare -A DOCKER_REPO_NAMES
