@@ -12,6 +12,6 @@
 [4]: https://docs.docker.com/get-docker "docker"
 
 ```shell
-git pull && sudo ./auto-build.sh [Docker ID] [password] [extractors]
+git pull && sudo ./auto-build.sh [Docker ID] [password] [extractors] [architecture]
 ```
-需要指定参数，Docker hub ID，password和可选的bool参数extractors指定是否构建地图提取器，执行构建完所有镜像后成会推送镜像到你的仓库。
+需要指定参数，Docker hub ID,password,bool参数extractors指定是否构建地图提取器和architecture架构(如aarch64,默认x86)，执行构建完所有镜像后成会推送镜像到你的仓库。

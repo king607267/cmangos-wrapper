@@ -1,7 +1,8 @@
 #default classic
 ARG CMANGOS_CORE=classic
+ARG BASE_IMAGE=ubuntu:22.04
 
-FROM ubuntu:22.04 as build-step
+FROM ${BASE_IMAGE} as build-step
 ARG CMANGOS_SERVER_BRANCH=master
 
 ARG CMANGOS_CORE=classic
@@ -20,7 +21,7 @@ RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata 
     make install ${THREAD_COUNT}
 
 #Runtime image realmd
-FROM ubuntu:22.04 as realmd
+FROM ${BASE_IMAGE} as realmd
 MAINTAINER wangjueming <king607267@gmail.com>
 
 EXPOSE 3724
@@ -46,12 +47,12 @@ RUN echo "#!/bin/bash" >> run_realmd.sh &&\
     echo "exec /etc/mangos/bin/realmd -c /etc/mangos/conf/realmd.conf" >> run_realmd.sh && \
     chmod u+x run_realmd.sh && \
     chown -R realm:realm .
-	
+
 USER realm
 CMD ["./run_realmd.sh"]
 
 #Runtime image mangosd
-FROM ubuntu:22.04 as mangosd
+FROM ${BASE_IMAGE} as mangosd
 MAINTAINER wangjueming <king607267@gmail.com>
 
 EXPOSE 8085
@@ -92,7 +93,7 @@ USER mangos
 CMD ["./run_cmangos.sh"]
 
 #Runtime image extractors
-FROM ubuntu:22.04 as extractors
+FROM ${BASE_IMAGE} as extractors
 MAINTAINER wangjueming <king607267@gmail.com>
 
 ARG CMANGOS_CORE

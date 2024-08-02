@@ -3,6 +3,8 @@ set -eo pipefail
 
 HUB_DOCKER_USERNAME="king607267"
 EXTRACTORS_FLAG=$3
+ARCHITECTURE=""
+BASE_IMAGE=""
 
 function initGitRepo() {
   #1 判断是否有对应的文件夹
@@ -21,7 +23,6 @@ function buildImage() {
   #构建
   DOCKER_FILE_NAME=""
   TARGET=""
-  ARCHITECTURE=""
   if [[ $1 =~ "-db" ]]; then
     DOCKER_FILE_NAME="Dockerfile-db"
   elif [[ $1 =~ "-server" ]]; then
@@ -34,13 +35,10 @@ function buildImage() {
     TARGET="--target realmd"
     DOCKER_FILE_NAME="Dockerfile-server"
   fi
-  if [[ `uname -p` == "aarch64" ]]; then
-    ARCHITECTURE="-aarch64"
-  fi
   #https://stackoverflow.com/questions/22179301/how-do-you-run-apt-get-in-a-dockerfile-behind-a-proxy
   #export DOCKER_CONFIG=~/.docker
-  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
-  docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
+  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --build-arg BASE_IMAGE=${BASE_IMAGE} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
+  docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --build-arg BASE_IMAGE=${BASE_IMAGE} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
 }
 
 declare -A DOCKER_REPO_NAMES
@@ -82,17 +80,17 @@ function modifyImageTag() {
 
 function imagePush() {
   docker login -u "$1" -p "$2" docker.io
-  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
+  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*${ARCHITECTURE}"); do
     echo "docker push $key to hub"
     docker push "$key"
   done
 }
 
 function imageDelete() {
-  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:latest" --format "{{.ID}}"); do
+  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && docker images --filter=reference="${HUB_DOCKER_USERNAME}/*${ARCHITECTURE}:latest" --format "{{.ID}}"); do
     docker rmi -f $i
   done
-  for i in $(docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:*" --format "{{.ID}}"); do
+  for i in $(docker images --filter=reference="${HUB_DOCKER_USERNAME}/*${ARCHITECTURE}:*" --format "{{.ID}}"); do
     docker rmi -f $i
   done
 }
@@ -109,6 +107,16 @@ function initBuildContext() {
 }
 
 start_time=$(date +%s)
+  if [[ $4 == "aarch64" ]]||[[ `uname -m` == "aarch64" ]]; then
+    ARCHITECTURE="-aarch64"
+    BASE_IMAGE="arm64v8/ubuntu"
+    if [[ `uname -m` != "aarch64" ]]; then
+      #https://blog.csdn.net/edcbc/article/details/139366049
+      #https://github.com/multiarch/qemu-user-static?tab=readme-ov-file
+      echo "docker run --rm --privileged multiarch/qemu-user-static --reset -p yes"
+      docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    fi
+  fi
 initBuildContext
 #imageDelete
 autoBuildGitMaster
