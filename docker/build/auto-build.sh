@@ -4,7 +4,7 @@ set -eo pipefail
 HUB_DOCKER_USERNAME="king607267"
 EXTRACTORS_FLAG=$3
 ARCHITECTURE=""
-BASE_IMAGE=""
+BASE_IMAGE="ubuntu:22.04"
 
 function initGitRepo() {
   #1 判断是否有对应的文件夹
@@ -68,7 +68,7 @@ function autoBuildGitMaster() {
 }
 
 function modifyImageTag() {
-  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
+  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*${ARCHITECTURE}"); do
     REPO=${key%:*}
     if [ "${key#*:}" == "latest" ]; then
       continue

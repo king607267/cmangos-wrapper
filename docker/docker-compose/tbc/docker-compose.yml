@@ -1,0 +1,49 @@
+version: '3.7'
+
+services:
+   db:
+     image: king607267/cmangos-tbc-db:latest
+     ports:
+       - "3306:3306"
+     volumes:
+       - yourpath/db:/var/lib/mysql
+     restart: "no"
+     environment:
+       MYSQL_ROOT_PASSWORD: mangos
+       MYSQL_PASSWORD: mangos
+       MYSQL_USER: mangos
+       TZ: Asia/Shanghai
+       REALM_IP: 127.0.0.1
+       REALM_PORT: 8085
+       REALM_NAME: MaNGOS
+
+   realmd:
+     depends_on:
+       - db
+     image: king607267/cmangos-tbc-realmd:latest
+     ports:
+       - "3724:3724"
+     restart: "no"
+     environment:
+       LOGIN_DATABASE_INFO: db;3306;mangos;mangos;tbcrealmd
+       TZ: Asia/Shanghai
+
+   server:
+     tty: true
+     stdin_open: true
+     depends_on:
+       - db
+       - realmd
+     image: king607267/cmangos-tbc-server:latest
+     volumes:
+       - yourpath/maps:/etc/mangos/data
+       - yourpath/conf:/etc/mangos/conf
+     ports:
+       - "8085:8085"
+     restart: "no"
+     environment:
+       LOGIN_DATABASE_INFO: db;3306;mangos;mangos;tbcrealmd
+       WORLD_DATABASE_INFO: db;3306;mangos;mangos;tbcmangos
+       CHARACTER_DATABASE_INFO: db;3306;mangos;mangos;tbccharacters
+       LOGS_DATABASE_INFO: db;3306;mangos;mangos;tbclogs
+       TZ: Asia/Shanghai

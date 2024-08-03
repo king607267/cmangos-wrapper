@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
    db:
-     image: king607267/cmangos-tbc-db:latest
+     image: king607267/cmangos-classic-db:latest
      ports:
        - "3306:3306"
      volumes:
@@ -20,12 +20,12 @@ services:
    realmd:
      depends_on:
        - db
-     image: king607267/cmangos-tbc-realmd:latest
+     image: king607267/cmangos-classic-realmd:latest
      ports:
        - "3724:3724"
      restart: "no"
      environment:
-       LOGIN_DATABASE_INFO: db;3306;mangos;mangos;tbcrealmd
+       LOGIN_DATABASE_INFO: db;3306;mangos;mangos;classicrealmd
        TZ: Asia/Shanghai
 
    server:
@@ -34,19 +34,16 @@ services:
      depends_on:
        - db
        - realmd
-     image: king607267/cmangos-tbc-server:latest
+     image: king607267/cmangos-classic-server:latest
      volumes:
-       - yourpath/maps:/etc/mangos/maps
-       - yourpath/vmaps:/etc/mangos/vmaps
-       - yourpath/mmaps:/etc/mangos/mmaps
-       - yourpath/dbc:/etc/mangos/dbc
-       - yourpath/Cameras:/etc/mangos/Cameras
+       - yourpath/maps:/etc/mangos/data
+       - yourpath/conf:/etc/mangos/conf
      ports:
        - "8085:8085"
      restart: "no"
      environment:
-       LOGIN_DATABASE_INFO: db;3306;mangos;mangos;tbcrealmd
-       WORLD_DATABASE_INFO: db;3306;mangos;mangos;tbcmangos
-       CHARACTER_DATABASE_INFO: db;3306;mangos;mangos;tbccharacters
-       LOGS_DATABASE_INFO: db;3306;mangos;mangos;tbclogs
+       LOGIN_DATABASE_INFO: db;3306;mangos;mangos;classicrealmd
+       WORLD_DATABASE_INFO: db;3306;mangos;mangos;classicmangos
+       CHARACTER_DATABASE_INFO: db;3306;mangos;mangos;classiccharacters
+       LOGS_DATABASE_INFO: db;3306;mangos;mangos;classiclogs
        TZ: Asia/Shanghai

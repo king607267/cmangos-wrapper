@@ -36,11 +36,8 @@ services:
        - realmd
      image: king607267/cmangos-wotlk-server:latest
      volumes:
-       - yourpath/maps:/etc/mangos/maps
-       - yourpath/vmaps:/etc/mangos/vmaps
-       - yourpath/mmaps:/etc/mangos/mmaps
-       - yourpath/dbc:/etc/mangos/dbc
-       - yourpath/Cameras:/etc/mangos/Cameras
+       - yourpath/maps:/etc/mangos/data
+       - yourpath/conf:/etc/mangos/conf
      ports:
        - "8085:8085"
      restart: "no"
