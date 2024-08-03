@@ -1,3 +1,5 @@
+ARG MYSQL_BASE_IMAGE=mysql:5.7.37
+
 FROM bitnami/git as cloneRepo
 ARG CMANGOS_CORE=classic
 #default master
@@ -25,7 +27,7 @@ RUN wget --no-check-certificate https://raw.githubusercontent.com/king607267/cma
     sed -i 's/^FULLDB_FILE_ZIP=\".*$/FULLDB_FILE_ZIP="'$FULLDB_FILE_ZIP'"/' InstallFullDB.sh
 
 
-FROM mysql:5.7.37
+FROM ${MYSQL_BASE_IMAGE}
 MAINTAINER wangjueming <king607267@gmail.com>
 EXPOSE 3306
 

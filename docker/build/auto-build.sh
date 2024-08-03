@@ -5,6 +5,7 @@ HUB_DOCKER_USERNAME="king607267"
 EXTRACTORS_FLAG=$3
 ARCHITECTURE=""
 BASE_IMAGE="ubuntu:22.04"
+MYSQL_BASE_IMAGE="mysql:5.7.37"
 
 function initGitRepo() {
   #1 判断是否有对应的文件夹
@@ -37,17 +38,17 @@ function buildImage() {
   fi
   #https://stackoverflow.com/questions/22179301/how-do-you-run-apt-get-in-a-dockerfile-behind-a-proxy
   #export DOCKER_CONFIG=~/.docker
-  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --build-arg BASE_IMAGE=${BASE_IMAGE} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
-  docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --build-arg BASE_IMAGE=${BASE_IMAGE} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
+  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --build-arg MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE} --build-arg BASE_IMAGE=${BASE_IMAGE} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
+  docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --build-arg MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE} --build-arg BASE_IMAGE=${BASE_IMAGE} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCHITECTURE}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
 }
 
 declare -A DOCKER_REPO_NAMES
-DOCKER_REPO_NAMES["mangos-classic"]="classic-server,classic-realmd,classic-extractors"
-DOCKER_REPO_NAMES["mangos-tbc"]="tbc-server,tbc-realmd,tbc-extractors"
-DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd,wotlk-extractors"
+#DOCKER_REPO_NAMES["mangos-classic"]="classic-server,classic-realmd,classic-extractors"
+#DOCKER_REPO_NAMES["mangos-tbc"]="tbc-server,tbc-realmd,tbc-extractors"
+#DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd,wotlk-extractors"
 DOCKER_REPO_NAMES["classic-db"]="classic-db"
-DOCKER_REPO_NAMES["tbc-db"]="tbc-db"
-DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
+#DOCKER_REPO_NAMES["tbc-db"]="tbc-db"
+#DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
 
 function autoBuildGitMaster() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
@@ -110,6 +111,7 @@ start_time=$(date +%s)
   if [[ $4 == "aarch64" ]]||[[ `uname -m` == "aarch64" ]]; then
     ARCHITECTURE="-aarch64"
     BASE_IMAGE="arm64v8/ubuntu"
+    MYSQL_BASE_IMAGE="biarms/mysql:5.7.30-linux-arm64v8"
     if [[ `uname -m` != "aarch64" ]]; then
       #https://blog.csdn.net/edcbc/article/details/139366049
       #https://github.com/multiarch/qemu-user-static?tab=readme-ov-file

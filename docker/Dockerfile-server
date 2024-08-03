@@ -11,7 +11,7 @@ ARG CMAKE_VERSION="3.22.0"
 ENV TZ Asia/Shanghai
 ARG REVISION_NUM
 
-RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata build-essential gcc g++ automake git-core autoconf make patch libmysql++-dev mysql-server libtool libssl-dev grep binutils zlib1g-dev libbz2-dev cmake libboost-all-dev wget -y && \
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata build-essential gcc g++ automake git-core autoconf make patch libmysql++-dev libtool libssl-dev grep binutils zlib1g-dev libbz2-dev cmake libboost-all-dev wget -y && \
     apt install g++-12 -y && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12 --slave /usr/bin/g++ g++ /usr/bin/g++-12 && \
     git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
