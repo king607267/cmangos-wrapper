@@ -43,12 +43,12 @@ function buildImage() {
 }
 
 declare -A DOCKER_REPO_NAMES
-#DOCKER_REPO_NAMES["mangos-classic"]="classic-server,classic-realmd,classic-extractors"
-#DOCKER_REPO_NAMES["mangos-tbc"]="tbc-server,tbc-realmd,tbc-extractors"
-#DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd,wotlk-extractors"
+DOCKER_REPO_NAMES["mangos-classic"]="classic-server,classic-realmd,classic-extractors"
+DOCKER_REPO_NAMES["mangos-tbc"]="tbc-server,tbc-realmd,tbc-extractors"
+DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd,wotlk-extractors"
 DOCKER_REPO_NAMES["classic-db"]="classic-db"
-#DOCKER_REPO_NAMES["tbc-db"]="tbc-db"
-#DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
+DOCKER_REPO_NAMES["tbc-db"]="tbc-db"
+DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
 
 function autoBuildGitMaster() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
