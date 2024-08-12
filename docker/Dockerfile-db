@@ -26,7 +26,7 @@ RUN wget --no-check-certificate https://raw.githubusercontent.com/king607267/cma
     FULLDB_FILE_ZIP=`cat InstallFullDB_tmp.sh | grep 'FULLDB_FILE_ZIP="' | awk -F "\"" '{print $2}'` && \
     sed -i 's/^FULLDB_FILE_ZIP=\".*$/FULLDB_FILE_ZIP="'$FULLDB_FILE_ZIP'"/' InstallFullDB.sh
 
-
+#https://bobcares.com/blog/mysql-5-7-arm64-docker/
 FROM ${MYSQL_BASE_IMAGE}
 MAINTAINER wangjueming <king607267@gmail.com>
 EXPOSE 3306
