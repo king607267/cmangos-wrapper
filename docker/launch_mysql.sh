@@ -156,6 +156,9 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
       mysql+=(-p"${MYSQL_ROOT_PASSWORD}")
     fi
 
+    if [ -f "/var/lib/mysql/ready" ]; then
+      rm /var/lib/mysql/ready #for k8s readinessProbe
+    fi
     echo "WORLD DATABASE CREATION..."
     CMANGOS_WORLD_DB=""
     CMANGOS_CHARACTER_DB=""
@@ -289,6 +292,7 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     echo 'MySQL init process done. Ready for start up.'
     echo
   fi
+touch /var/lib/mysql/ready #for k8s readinessProbe
 fi
 
 exec "$@"
