@@ -188,7 +188,8 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
       CMANGOS_SERVER_PATH=mangos-wotlk
       CMANGOS_DB_FILE_PATH=wotlk-db
     fi
-
+    tar -xzf /{CMANGOS_SERVER_PATH}.tar.gz && rm /{CMANGOS_SERVER_PATH}.tar.gz
+    tar -xzf /{CMANGOS_DB_FILE_PATH}.tar.gz && rm /{CMANGOS_DB_FILE_PATH}.tar.gz
     echo "CREATE DATABASE \`${CMANGOS_WORLD_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
     echo "CREATE DATABASE \`${CMANGOS_CHARACTER_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
     echo "CREATE DATABASE \`${CMANGOS_REALMD_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
