@@ -20,6 +20,8 @@ RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata 
     make ${THREAD_COUNT} && \
     make install ${THREAD_COUNT}
 
+RUN cd /mangos-${CMANGOS_CORE}/run/bin && tar -czf mangosd.tar.gz mangosd
+
 #Runtime image realmd
 FROM ${BASE_IMAGE} as realmd
 MAINTAINER wangjueming <king607267@gmail.com>
@@ -31,15 +33,13 @@ ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}realmd
 ENV TZ Asia/Shanghai
 
 WORKDIR /etc/mangos/
-COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin ./bin
+COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin/realmd ./bin/realmd
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 
 RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev openssl && rm -rf /var/lib/apt/lists/*
 RUN useradd -ms /bin/bash realm && \
     mv conf/realmd.conf.dist conf/realmd.conf && \
-    sed -i 's/^LoginDatabaseInfo =.*$/LoginDatabaseInfo = LOGIN_DATABASE_INFO/' conf/realmd.conf && \
-    rm /etc/mangos/bin/mangosd && \
-    rm /etc/mangos/conf/mangosd*
+    sed -i 's/^LoginDatabaseInfo =.*$/LoginDatabaseInfo = LOGIN_DATABASE_INFO/' conf/realmd.conf
 
 
 RUN echo "#!/bin/bash" >> run_realmd.sh &&\
@@ -65,7 +65,7 @@ ENV LOGS_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}logs
 ENV TZ Asia/Shanghai
 
 WORKDIR /etc/mangos/
-COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin ./bin
+COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin/mangosd.tar.gz ./bin/mangosd.tar.gz
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 COPY --from=build-step /mangos-${CMANGOS_CORE}/src/game/AuctionHouseBot/ahbot.conf.dist.in ./conf/ahbot.conf
 
@@ -76,15 +76,14 @@ RUN useradd -ms /bin/bash mangos && \
     sed -i 's/^WorldDatabaseInfo     =.*$/WorldDatabaseInfo     = WORLD_DATABASE_INFO/' conf/mangosd.conf && \
     sed -i 's/^CharacterDatabaseInfo =.*$/CharacterDatabaseInfo = CHARACTER_DATABASE_INFO/' conf/mangosd.conf && \
     sed -i 's/^LogsDatabaseInfo      =.*$/LogsDatabaseInfo      = LOGS_DATABASE_INFO/' conf/mangosd.conf && \
-    sed -i 's/^DataDir = "."/DataDir = "\/etc\/mangos\/data"/' conf/mangosd.conf && \
-    rm /etc/mangos/bin/realmd && \
-    rm /etc/mangos/conf/realmd*
+    sed -i 's/^DataDir = "."/DataDir = "\/etc\/mangos\/data"/' conf/mangosd.conf
 
-RUN echo "#!/bin/bash" >> run_cmangos.sh &&\
+RUN echo "#!/bin/bash" >> run_cmangos.sh && \
     echo "sed -i \"s/LOGIN_DATABASE_INFO/\$LOGIN_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/WORLD_DATABASE_INFO/\$WORLD_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/CHARACTER_DATABASE_INFO/\$CHARACTER_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
     echo "sed -i \"s/LOGS_DATABASE_INFO/\$LOGS_DATABASE_INFO/g\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
+    echo "tar -xzf /etc/mangos/bin/mangosd.tar.gz -C /etc/mangos/bin && rm /etc/mangos/bin/mangosd.tar.gz" >> run_cmangos.sh && \
     echo "exec /etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf" >> run_cmangos.sh &&\
     chmod u+x run_cmangos.sh && \
     chown -R mangos:mangos .
