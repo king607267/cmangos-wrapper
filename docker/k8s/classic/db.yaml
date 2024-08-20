@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: classic
+  name: classic-mysql-svc
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+  selector:
+    app: classic-mysql
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: classic
+  name: classic-mysql
+spec:
+  selector:
+    matchLabels:
+      app: classic-mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: classic-mysql
+    spec:
+      nodeSelector:
+        disk: ssd
+      containers:
+        - image: king607267/cmangos-classic-db-aarch64 #x86 king607267/cmangos-classic-db
+          imagePullPolicy: IfNotPresent
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - /var/lib/mysql/ready
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "150Mi"
+            limits:
+              cpu: "1"
+              memory: "350Mi"
+          name: mysql-classic
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: MYSQL_USER
+          ports:
+            - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - name: classic-mysql
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: classic-mysql
+          persistentVolumeClaim:
+            claimName: classic-mysql-pvc

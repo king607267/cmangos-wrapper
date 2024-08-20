@@ -1,0 +1,202 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: classic
+  name: realmd-classic-svc
+spec:
+  ports:
+    - port: 3724
+      targetPort: 3724
+  selector:
+    app: realmd-classic
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: classic
+  name: realmd-classic
+spec:
+  selector:
+    matchLabels:
+      app: realmd-classic
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: realmd-classic
+    spec:
+      initContainers:
+        - name: check-mysql
+          image: mysql
+          command:
+            - sh
+            - -c
+            - |            #!/bin/bash
+              until mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e ''; do
+                >&2 echo "MySQL is unavailable - sleeping-30s"
+                sleep 30
+              done
+          envFrom:
+            - secretRef:
+                name: classic-secrets
+      containers:
+        - image: king607267/cmangos-classic-realmd-aarch64 #x86 king607267/cmangos-classic-realmd
+          name: realmdclassic
+          imagePullPolicy: IfNotPresent
+          readinessProbe:
+            tcpSocket:
+              port: 3724
+            periodSeconds: 30
+          livenessProbe:
+            tcpSocket:
+              port: 3724
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "5Mi"
+            limits:
+              cpu: "200m"
+              memory: "20Mi"
+          env:
+            - name: TZ
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: TZ
+            - name: LOGIN_DATABASE_INFO
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: LOGIN_DATABASE_INFO
+          ports:
+            - containerPort: 3724
+              name: realmd-classic
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: classic
+  name: server-classic-svc
+spec:
+  ports:
+    - port: 8085
+      targetPort: 8085
+  selector:
+    app: server-classic
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: classic
+  name: server-classic-soap
+spec:
+  ports:
+    - port: 7878
+      targetPort: 7878
+  selector:
+    app: server-classic
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: classic
+  name: server-classic
+spec:
+  selector:
+    matchLabels:
+      app: server-classic
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: server-classic
+    spec:
+      initContainers:
+        - name: check-mysql
+          image: mysql
+          command:
+            - sh
+            - -c
+            - |            #!/bin/bash
+              until mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e ''; do
+                >&2 echo "MySQL is unavailable - sleeping-30s"
+                sleep 30
+              done
+          envFrom:
+            - secretRef:
+                name: classic-secrets
+      terminationGracePeriodSeconds: 120
+      containers:
+        - image: king607267/cmangos-classic-server-aarch64 #x86 king607267/cmangos-classic-server
+          imagePullPolicy: IfNotPresent
+          readinessProbe:
+            tcpSocket:
+              port: 8085
+            periodSeconds: 30
+          livenessProbe:
+            tcpSocket:
+              port: 8085
+            periodSeconds: 30
+          name: serverclassic
+          lifecycle:
+            preStop:
+              exec:
+                command: [ ".server restart", "60" ]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "650Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          stdin: true
+          tty: true
+          env:
+            - name: TZ
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: TZ
+            - name: LOGIN_DATABASE_INFO
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: LOGIN_DATABASE_INFO
+            - name: WORLD_DATABASE_INFO
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: WORLD_DATABASE_INFO
+            - name: CHARACTER_DATABASE_INFO
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: CHARACTER_DATABASE_INFO
+            - name: LOGS_DATABASE_INFO
+              valueFrom:
+                secretKeyRef:
+                  name: classic-secrets
+                  key: logs_database_info
+          ports:
+            - containerPort: 8085
+              name: server-classic
+            - containerPort: 7878
+              name: ser-cla-soap
+          volumeMounts:
+            - name: mangos-maps
+              mountPath: /etc/mangos/data
+            - name: mangos-conf
+              mountPath: /etc/mangos/conf
+      volumes:
+        - name: mangos-maps
+          persistentVolumeClaim:
+            claimName: classic-maps-pvc
+        - name: mangos-conf
+          persistentVolumeClaim:
+            claimName: classic-conf-pvc
