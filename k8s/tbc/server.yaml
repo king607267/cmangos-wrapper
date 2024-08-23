@@ -2,30 +2,30 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: wow
-  name: classic-realmd-svc
+  name: tbc-realmd-svc
 spec:
   ports:
     - port: 3724
       targetPort: 3724
   selector:
-    app: classic-realmd
+    app: tbc-realmd
   type: LoadBalancer
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: wow
-  name: classic-realmd
+  name: tbc-realmd
 spec:
   selector:
     matchLabels:
-      app: classic-realmd
+      app: tbc-realmd
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: classic-realmd
+        app: tbc-realmd
     spec:
       initContainers:
         - name: check-mysql
@@ -40,10 +40,10 @@ spec:
               done
           envFrom:
             - secretRef:
-                name: classic-secrets
+                name: tbc-secrets
       containers:
-        - image: king607267/cmangos-classic-realmd-aarch64 #x86 king607267/cmangos-classic-realmd
-          name: classic-realmd
+        - image: king607267/cmangos-tbc-realmd-aarch64 #x86 king607267/cmangos-tbc-realmd
+          name: tbc-realmd
           imagePullPolicy: IfNotPresent
           readinessProbe:
             tcpSocket:
@@ -64,58 +64,58 @@ spec:
             - name: TZ
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: tbc-secrets
                   key: TZ
             - name: LOGIN_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: tbc-secrets
                   key: LOGIN_DATABASE_INFO
           ports:
             - containerPort: 3724
-              name: classic-realmd
+              name: tbc-realmd
 ---
 apiVersion: v1
 kind: Service
 metadata:
   namespace: wow
-  name: classic-server-svc
+  name: tbc-server-svc
 spec:
   ports:
     - port: 8085
       targetPort: 8085
   selector:
-    app: classic-server
+    app: tbc-server
   type: LoadBalancer
 ---
 apiVersion: v1
 kind: Service
 metadata:
   namespace: wow
-  name: classic-server-soap
+  name: tbc-server-soap
 spec:
   ports:
     - port: 7878
       targetPort: 7878
   selector:
-    app: classic-server
+    app: tbc-server
   type: LoadBalancer
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: wow
-  name: classic-server
+  name: tbc-server
 spec:
   selector:
     matchLabels:
-      app: classic-server
+      app: tbc-server
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: classic-server
+        app: tbc-server
     spec:
       initContainers:
         - name: check-mysql
@@ -130,10 +130,10 @@ spec:
               done
           envFrom:
             - secretRef:
-                name: classic-secrets
+                name: tbc-secrets
       terminationGracePeriodSeconds: 120
       containers:
-        - image: king607267/cmangos-classic-server-aarch64 #x86 king607267/cmangos-classic-server
+        - image: king607267/cmangos-tbc-server-aarch64 #x86 king607267/cmangos-tbc-server
           imagePullPolicy: IfNotPresent
           readinessProbe:
             tcpSocket:
@@ -143,7 +143,7 @@ spec:
             tcpSocket:
               port: 8085
             periodSeconds: 30
-          name: classic-server
+          name: tbc-server
           lifecycle:
             preStop:
               exec:
@@ -154,46 +154,46 @@ spec:
               memory: "650Mi"
             limits:
               cpu: "1"
-              memory: "1Gi"
+              memory: "1.5Gi"
           stdin: true
           tty: true
           env:
             - name: TZ
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: tbc-secrets
                   key: TZ
             - name: LOGIN_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: tbc-secrets
                   key: LOGIN_DATABASE_INFO
             - name: WORLD_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: tbc-secrets
                   key: WORLD_DATABASE_INFO
             - name: CHARACTER_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: tbc-secrets
                   key: CHARACTER_DATABASE_INFO
             - name: LOGS_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: tbc-secrets
                   key: LOGS_DATABASE_INFO
           ports:
             - containerPort: 8085
-              name: classic-server
+              name: tbc-server
             - containerPort: 7878
               name: ser-cla-soap
           volumeMounts:
             - name: wow-nfs
-              subPath: classic/map
+              subPath: tbc/map
               mountPath: /etc/mangos/data
             - name: wow-nfs
-              subPath: classic/conf
+              subPath: tbc/conf
               mountPath: /etc/mangos/conf
       volumes:
         - nfs:
