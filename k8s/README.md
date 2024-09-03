@@ -1,4 +1,4 @@
-部署说明
+manifest部署说明
 ========================================
 classic、tbc、wotlk文件夹中分别包含3个文件
 
@@ -19,3 +19,11 @@ kubectl apply -f classic/server.yaml -n wow
 ```
 
 [1]: https://metallb.universe.tf/ "metallb"
+
+helm部署说明
+========================================
+helm chart存放在helm目录下，使用如下命令部署
+```shell
+helm install classic . -n wow
+```
+请修改values.yaml中的相关配置适合你的环境。

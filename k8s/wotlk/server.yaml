@@ -2,30 +2,30 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: wow
-  name: classic-realmd-svc
+  name: wotlk-realmd-svc
 spec:
   ports:
     - port: 3724
       targetPort: 3724
   selector:
-    app: classic-realmd
+    app: wotlk-realmd
   type: LoadBalancer
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: wow
-  name: classic-realmd
+  name: wotlk-realmd
 spec:
   selector:
     matchLabels:
-      app: classic-realmd
+      app: wotlk-realmd
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: classic-realmd
+        app: wotlk-realmd
     spec:
       initContainers:
         - name: check-mysql
@@ -40,10 +40,10 @@ spec:
               done
           envFrom:
             - secretRef:
-                name: classic-secrets
+                name: wotlk-secrets
       containers:
-        - image: king607267/cmangos-classic-realmd
-          name: classic-realmd
+        - image: king607267/cmangos-wotlk-realmd #x86 king607267/cmangos-wotlk-realmd
+          name: wotlk-realmd
           imagePullPolicy: IfNotPresent
           readinessProbe:
             tcpSocket:
@@ -64,58 +64,58 @@ spec:
             - name: TZ
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: wotlk-secrets
                   key: TZ
             - name: LOGIN_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: wotlk-secrets
                   key: LOGIN_DATABASE_INFO
           ports:
             - containerPort: 3724
-              name: classic-realmd
+              name: wotlk-realmd
 ---
 apiVersion: v1
 kind: Service
 metadata:
   namespace: wow
-  name: classic-server-svc
+  name: wotlk-server-svc
 spec:
   ports:
     - port: 8085
       targetPort: 8085
   selector:
-    app: classic-server
+    app: wotlk-server
   type: LoadBalancer
 ---
 apiVersion: v1
 kind: Service
 metadata:
   namespace: wow
-  name: classic-server-soap
+  name: wotlk-server-soap
 spec:
   ports:
     - port: 7878
       targetPort: 7878
   selector:
-    app: classic-server
+    app: wotlk-server
   type: LoadBalancer
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: wow
-  name: classic-server
+  name: wotlk-server
 spec:
   selector:
     matchLabels:
-      app: classic-server
+      app: wotlk-server
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: classic-server
+        app: wotlk-server
     spec:
       initContainers:
         - name: check-mysql
@@ -130,10 +130,10 @@ spec:
               done
           envFrom:
             - secretRef:
-                name: classic-secrets
+                name: wotlk-secrets
       terminationGracePeriodSeconds: 120
       containers:
-        - image: king607267/cmangos-classic-server
+        - image: king607267/cmangos-wotlk-server #x86 king607267/cmangos-wotlk-server
           imagePullPolicy: IfNotPresent
           readinessProbe:
             tcpSocket:
@@ -143,7 +143,7 @@ spec:
             tcpSocket:
               port: 8085
             periodSeconds: 30
-          name: classic-server
+          name: wotlk-server
           lifecycle:
             preStop:
               exec:
@@ -154,46 +154,46 @@ spec:
               memory: "650Mi"
             limits:
               cpu: "1"
-              memory: "1Gi"
+              memory: "1.5Gi"
           stdin: true
           tty: true
           env:
             - name: TZ
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: wotlk-secrets
                   key: TZ
             - name: LOGIN_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: wotlk-secrets
                   key: LOGIN_DATABASE_INFO
             - name: WORLD_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: wotlk-secrets
                   key: WORLD_DATABASE_INFO
             - name: CHARACTER_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: wotlk-secrets
                   key: CHARACTER_DATABASE_INFO
             - name: LOGS_DATABASE_INFO
               valueFrom:
                 secretKeyRef:
-                  name: classic-secrets
+                  name: wotlk-secrets
                   key: LOGS_DATABASE_INFO
           ports:
             - containerPort: 8085
-              name: classic-server
+              name: wotlk-server
             - containerPort: 7878
               name: ser-cla-soap
           volumeMounts:
             - name: wow-nfs
-              subPath: classic/map
+              subPath: wotlk/map
               mountPath: /etc/mangos/data
             - name: wow-nfs
-              subPath: classic/conf
+              subPath: wotlk/conf
               mountPath: /etc/mangos/conf
       volumes:
         - nfs:

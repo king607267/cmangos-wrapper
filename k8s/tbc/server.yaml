@@ -42,7 +42,7 @@ spec:
             - secretRef:
                 name: tbc-secrets
       containers:
-        - image: king607267/cmangos-tbc-realmd-aarch64 #x86 king607267/cmangos-tbc-realmd
+        - image: king607267/cmangos-tbc-realmd
           name: tbc-realmd
           imagePullPolicy: IfNotPresent
           readinessProbe:
@@ -133,7 +133,7 @@ spec:
                 name: tbc-secrets
       terminationGracePeriodSeconds: 120
       containers:
-        - image: king607267/cmangos-tbc-server-aarch64 #x86 king607267/cmangos-tbc-server
+        - image: king607267/cmangos-tbc-server
           imagePullPolicy: IfNotPresent
           readinessProbe:
             tcpSocket:

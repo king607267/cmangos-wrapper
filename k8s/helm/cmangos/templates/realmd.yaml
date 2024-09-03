@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: wow
+  name: {{ .Values.cmangos.type }}-realmd-svc
+spec:
+  ports:
+    - port: {{ .Values.realmd.service.port }}
+      targetPort: 3724
+  selector:
+    app: {{ .Values.cmangos.type }}-realmd
+  type: {{ .Values.realmd.service.type }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: wow
+  name: {{ .Values.cmangos.type }}-realmd
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.cmangos.type }}-realmd
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cmangos.type }}-realmd
+    spec:
+      initContainers:
+        - name: check-mysql
+          image: mysql
+          command:
+            - sh
+            - -c
+            - |            #!/bin/bash
+              until mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e ''; do
+                >&2 echo "MySQL is unavailable - sleeping-30s"
+                sleep 30
+              done
+          envFrom:
+            - secretRef:
+                name: {{ .Values.cmangos.type }}-secrets
+      containers:
+        - image: king607267/cmangos-{{ .Values.cmangos.type }}-realmd
+          name: {{ .Values.cmangos.type }}-realmd
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.realmd.service.port }}
+            periodSeconds: 30
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.realmd.service.port }}
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.realmd.resources | nindent 12 }}
+          env:
+            - name: TZ
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.cmangos.type }}-secrets
+                  key: TZ
+            - name: LOGIN_DATABASE_INFO
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.cmangos.type }}-secrets
+                  key: LOGIN_DATABASE_INFO
+          ports:
+            - containerPort: 3724
+              name: {{ .Values.cmangos.type }}-realmd

@@ -30,7 +30,7 @@ spec:
       nodeSelector:
         disk: ssd
       containers:
-        - image: king607267/cmangos-classic-db-aarch64 #x86 king607267/cmangos-classic-db
+        - image: king607267/cmangos-classic-db
           imagePullPolicy: IfNotPresent
           readinessProbe:
             exec:
@@ -73,4 +73,4 @@ spec:
         - name: classic-mysql
           hostPath:
             path: /data/mysql/classic
-            type: Directory
+            type: DirectoryOrCreate

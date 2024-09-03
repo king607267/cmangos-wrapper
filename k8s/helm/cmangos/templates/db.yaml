@@ -2,36 +2,36 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: wow
-  name: tbc-mysql-svc
+  name: {{ .Values.cmangos.type }}-mysql-svc
 spec:
   ports:
-    - port: 3306
+    - port: {{ .Values.mysql.port }}
       targetPort: 3306
   selector:
-    app: tbc-mysql
-  type: LoadBalancer
+    app: {{ .Values.cmangos.type }}-mysql
+  type: {{ .Values.mysql.service.type }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: wow
-  name: tbc-mysql
+  name: {{ .Values.cmangos.type }}-mysql
 spec:
   selector:
     matchLabels:
-      app: tbc-mysql
+      app: {{ .Values.cmangos.type }}-mysql
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: tbc-mysql
+        app: {{ .Values.cmangos.type }}-mysql
     spec:
       nodeSelector:
         disk: ssd
       containers:
-        - image: king607267/cmangos-tbc-db
-          imagePullPolicy: IfNotPresent
+        - image: king607267/cmangos-{{ .Values.cmangos.type }}-db
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           readinessProbe:
             exec:
               command:
@@ -40,37 +40,32 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 20
           resources:
-            requests:
-              cpu: "100m"
-              memory: "150Mi"
-            limits:
-              cpu: "1"
-              memory: "350Mi"
-          name: tbc-mysql
+            {{- toYaml .Values.mysql.resources | nindent 12 }}
+          name: {{ .Values.cmangos.type }}-mysql
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: tbc-secrets
+                  name: {{ .Values.cmangos.type }}-secrets
                   key: MYSQL_ROOT_PASSWORD
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: tbc-secrets
+                  name: {{ .Values.cmangos.type }}-secrets
                   key: MYSQL_PASSWORD
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: tbc-secrets
+                  name: {{ .Values.cmangos.type }}-secrets
                   key: MYSQL_USER
           ports:
             - containerPort: 3306
               name: mysql
           volumeMounts:
-            - name: tbc-mysql
+            - name: {{ .Values.cmangos.type }}-mysql
               mountPath: /var/lib/mysql
       volumes:
-        - name: tbc-mysql
+        - name: {{ .Values.cmangos.type }}-mysql
           hostPath:
-            path: /data/mysql/tbc
+            path: /data/mysql/{{ .Values.cmangos.type }}
             type: DirectoryOrCreate

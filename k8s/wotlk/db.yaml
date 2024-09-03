@@ -2,35 +2,35 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: wow
-  name: tbc-mysql-svc
+  name: wotlk-mysql-svc
 spec:
   ports:
     - port: 3306
       targetPort: 3306
   selector:
-    app: tbc-mysql
+    app: wotlk-mysql
   type: LoadBalancer
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: wow
-  name: tbc-mysql
+  name: wotlk-mysql
 spec:
   selector:
     matchLabels:
-      app: tbc-mysql
+      app: wotlk-mysql
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: tbc-mysql
+        app: wotlk-mysql
     spec:
       nodeSelector:
         disk: ssd
       containers:
-        - image: king607267/cmangos-tbc-db
+        - image: king607267/cmangos-wotlk-db
           imagePullPolicy: IfNotPresent
           readinessProbe:
             exec:
@@ -46,31 +46,31 @@ spec:
             limits:
               cpu: "1"
               memory: "350Mi"
-          name: tbc-mysql
+          name: wotlk-mysql
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: tbc-secrets
+                  name: wotlk-secrets
                   key: MYSQL_ROOT_PASSWORD
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: tbc-secrets
+                  name: wotlk-secrets
                   key: MYSQL_PASSWORD
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: tbc-secrets
+                  name: wotlk-secrets
                   key: MYSQL_USER
           ports:
             - containerPort: 3306
               name: mysql
           volumeMounts:
-            - name: tbc-mysql
+            - name: wotlk-mysql
               mountPath: /var/lib/mysql
       volumes:
-        - name: tbc-mysql
+        - name: wotlk-mysql
           hostPath:
-            path: /data/mysql/tbc
+            path: /data/mysql/wotlk
             type: DirectoryOrCreate
