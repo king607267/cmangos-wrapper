@@ -290,10 +290,10 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
     fi
 
     echo
+    touch /var/lib/mysql/ready #for k8s readinessProbe
     echo 'MySQL init process done. Ready for start up.'
     echo
   fi
-touch /var/lib/mysql/ready #for k8s readinessProbe
 fi
 
 exec "$@"
