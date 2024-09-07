@@ -1,0 +1,52 @@
+cmangos:
+  type: classic
+
+realmd:
+  service:
+    port: 3724
+    type: LoadBalancer
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "5Mi"
+    limits:
+      cpu: "200m"
+      memory: "20Mi"
+
+server:
+  service:
+    port: 8085
+    soa:
+      port: 7878
+    type: LoadBalancer
+  resources:
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+    requests:
+      cpu: "100m"
+      memory: "650Mi"
+
+mysql:
+  nodeSelector: "h-p_ssd"
+  service:
+    type: LoadBalancer
+  user: mangos
+  password: mangos
+  root_password: mangos
+  port: 3306
+  tz: Asia/Shanghai
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "150Mi"
+    limits:
+      cpu: "800m"
+      memory: "350Mi"
+
+image:
+  pullPolicy: Always
+
+nfs:
+  server: nfs.server
+  path: /mnt/user/share/WoW/docker

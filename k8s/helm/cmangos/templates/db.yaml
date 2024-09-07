@@ -27,8 +27,10 @@ spec:
       labels:
         app: {{ .Values.cmangos.type }}-mysql
     spec:
+      {{- if .Values.mysql.nodeSelector }}
       nodeSelector:
-        disk: ssd
+        disk: {{ .Values.mysql.nodeSelector }}
+      {{- end }}
       containers:
         - image: king607267/cmangos-{{ .Values.cmangos.type }}-db
           imagePullPolicy: {{ .Values.image.pullPolicy }}
