@@ -1,20 +1,16 @@
 #default classic
 ARG CMANGOS_CORE=classic
-ARG BASE_IMAGE=ubuntu:22.04
 
-FROM ${BASE_IMAGE} as build-step
-ARG CMANGOS_SERVER_BRANCH=master
-
+FROM ubuntu:22.04 AS build-step
 ARG CMANGOS_CORE=classic
 ARG THREAD_COUNT="-j4"
-ARG CMAKE_VERSION="3.22.0"
-ENV TZ Asia/Shanghai
+ENV TZ=Asia/Shanghai
 ARG REVISION_NUM
 
-RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata build-essential gcc g++ automake git-core autoconf make patch libmysql++-dev libtool libssl-dev grep binutils zlib1g-dev libbz2-dev cmake libboost-all-dev wget -y && \
+COPY mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata build-essential gcc g++ automake git-core autoconf make patch libmysql++-dev libtool libssl-dev grep binutils zlib1g-dev libbz2-dev cmake libboost-all-dev -y && \
     apt install g++-12 -y && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12 --slave /usr/bin/g++ g++ /usr/bin/g++-12 && \
-    git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
     mkdir build && cd build && \
     cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_EXTRACTORS=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
     make ${THREAD_COUNT} && \
@@ -23,14 +19,13 @@ RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata 
 RUN cd /mangos-${CMANGOS_CORE}/run/bin && tar -czf mangosd.tar.gz mangosd
 
 #Runtime image realmd
-FROM ${BASE_IMAGE} as realmd
-MAINTAINER wangjueming <king607267@gmail.com>
+FROM ubuntu:22.04 AS realmd
 
 EXPOSE 3724
 ARG CMANGOS_CORE
 ENV CMANGOS_CORE=${CMANGOS_CORE}
 ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}realmd
-ENV TZ Asia/Shanghai
+ENV TZ=Asia/Shanghai
 
 WORKDIR /etc/mangos/
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin/realmd ./bin/realmd
@@ -52,8 +47,7 @@ USER realm
 CMD ["./run_realmd.sh"]
 
 #Runtime image mangosd
-FROM ${BASE_IMAGE} as mangosd
-MAINTAINER wangjueming <king607267@gmail.com>
+FROM ubuntu:22.04 AS mangosd
 
 EXPOSE 8085
 ARG CMANGOS_CORE
@@ -62,7 +56,7 @@ ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}realmd
 ENV WORLD_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}mangos
 ENV CHARACTER_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}characters
 ENV LOGS_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}logs
-ENV TZ Asia/Shanghai
+ENV TZ=Asia/Shanghai
 
 WORKDIR /etc/mangos/
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin/mangosd.tar.gz ./bin/mangosd.tar.gz
@@ -92,12 +86,11 @@ USER mangos
 CMD ["./run_cmangos.sh"]
 
 #Runtime image extractors
-FROM ${BASE_IMAGE} as extractors
-MAINTAINER wangjueming <king607267@gmail.com>
+FROM ubuntu:22.04 AS extractors
 
 ARG CMANGOS_CORE
 ENV CMANGOS_CORE=${CMANGOS_CORE}
-ENV TZ Asia/Shanghai
+ENV TZ=Asia/Shanghai
 
 WORKDIR /etc/mangos/
 

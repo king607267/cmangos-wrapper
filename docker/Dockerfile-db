@@ -1,56 +1,46 @@
-ARG MYSQL_BASE_IMAGE=mysql:5.7.37
-
-FROM bitnami/git as cloneRepo
+FROM bitnami/git AS clonerepo
 ARG CMANGOS_CORE=classic
-#default master
-ARG CMANGOS_DATABASE_BRANCH=master
-#default master
-ARG CMANGOS_SERVER_BRANCH=master
-#default classic
 ARG REVISION_NUM
 
-RUN git clone https://github.com/cmangos/mangos-${CMANGOS_CORE}.git -b ${CMANGOS_SERVER_BRANCH} --recursive --depth=1 && \
-    git clone https://github.com/cmangos/${CMANGOS_CORE}-db.git -b ${CMANGOS_DATABASE_BRANCH} --recursive --depth=1 && \
-    cd mangos-${CMANGOS_CORE} &&\
+COPY mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
+COPY ${CMANGOS_CORE}-db ${CMANGOS_CORE}-db
+COPY ${CMANGOS_CORE}-InstallFullDB.sh InstallFullDB.sh
+COPY ${CMANGOS_CORE}-db/InstallFullDB.sh InstallFullDB_tmp.sh
+RUN cd mangos-${CMANGOS_CORE} &&\
     rm -rf `ls |egrep -v '(sql)'` && rm -rf .git* && \
     cd ../${CMANGOS_CORE}-db && \
     rm -rf `ls |egrep -v '(ACID|Full_DB|Updates|utilities)'` && rm -rf .git* && \
     cd .. && \
     tar -czf mangos-${CMANGOS_CORE}.tar.gz mangos-${CMANGOS_CORE} && \
     tar -czf ${CMANGOS_CORE}-db.tar.gz ${CMANGOS_CORE}-db && \
-    rm -rf mangos-${CMANGOS_CORE}/* && rm -rf ${CMANGOS_CORE}-db/*
-
-FROM netdata/wget as dowloadFile
-ARG CMANGOS_CORE=classic
-RUN wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/launch_mysql.sh && \
-    wget --no-check-certificate https://raw.githubusercontent.com/king607267/cmangos-wrapper/master/docker/${CMANGOS_CORE}-InstallFullDB.sh -O InstallFullDB.sh && \
-    wget --no-check-certificate https://raw.githubusercontent.com/cmangos/${CMANGOS_CORE}-db/master/InstallFullDB.sh -O InstallFullDB_tmp.sh && \
+    rm -rf mangos-${CMANGOS_CORE}/* && rm -rf ${CMANGOS_CORE}-db/* && \
     FULLDB_FILE_ZIP=`cat InstallFullDB_tmp.sh | grep 'FULLDB_FILE_ZIP="' | awk -F "\"" '{print $2}'` && \
-    sed -i 's/^FULLDB_FILE_ZIP=\".*$/FULLDB_FILE_ZIP="'$FULLDB_FILE_ZIP'"/' InstallFullDB.sh && \
-    chmod a+x launch_mysql.sh
+    sed -i 's/^FULLDB_FILE_ZIP=\".*$/FULLDB_FILE_ZIP="'$FULLDB_FILE_ZIP'"/' InstallFullDB.sh
 
-#https://bobcares.com/blog/mysql-5-7-arm64-docker/
-FROM ${MYSQL_BASE_IMAGE}
-MAINTAINER wangjueming <king607267@gmail.com>
+FROM mysql:8.0.36
+
 EXPOSE 3306
 
 ARG CMANGOS_CORE=classic
 
 ENV CMANGOS_CORE=${CMANGOS_CORE}
 
-ENV TZ Asia/Shanghai
+ENV TZ=Asia/Shanghai
 
 ENV REALM_IP=127.0.0.1
 ENV REALM_PORT=8085
 ENV REALM_NAME=MaNGOS
 
-COPY --from=cloneRepo mangos-${CMANGOS_CORE}.tar.gz mangos-${CMANGOS_CORE}.tar.gz
-COPY --from=cloneRepo ${CMANGOS_CORE}-db.tar.gz ${CMANGOS_CORE}-db.tar.gz
-COPY --from=cloneRepo mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
-COPY --from=cloneRepo ${CMANGOS_CORE}-db ${CMANGOS_CORE}-db
-COPY --from=dowloadFile launch_mysql.sh launch_mysql.sh
-COPY --from=dowloadFile InstallFullDB.sh ${CMANGOS_CORE}-db/InstallFullDB.sh
-RUN chmod -R 777 ${CMANGOS_CORE}-db && chmod -R 777 mangos-${CMANGOS_CORE}
+WORKDIR /docker-entrypoint-initdb.d/
 
-ENTRYPOINT ["./launch_mysql.sh"]
+COPY --from=clonerepo mangos-${CMANGOS_CORE}.tar.gz mangos-${CMANGOS_CORE}.tar.gz
+COPY --from=clonerepo ${CMANGOS_CORE}-db.tar.gz ${CMANGOS_CORE}-db.tar.gz
+COPY --from=clonerepo mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
+COPY --from=clonerepo ${CMANGOS_CORE}-db ${CMANGOS_CORE}-db
+COPY --from=clonerepo InstallFullDB.sh ${CMANGOS_CORE}-db/InstallFullDB.sh
+COPY launch_mysql.sh .
+
+RUN chmod -R 777 ${CMANGOS_CORE}-db && chmod -R 777 mangos-${CMANGOS_CORE} && chmod a+x launch_mysql.sh
+
+#ENTRYPOINT ["./launch_mysql.sh"]
 CMD ["mysqld"]

@@ -3,16 +3,25 @@ set -eo pipefail
 
 HUB_DOCKER_USERNAME="king607267"
 EXTRACTORS_FLAG=$3
-ARCHITECTURE=""
-BASE_IMAGE="ubuntu:22.04"
-MYSQL_BASE_IMAGE="mysql:5.7.37"
 
 function initGitRepo() {
-  #1 判断是否有对应的文件夹
-  if [ ! -d "$1" ]; then
-    git clone https://github.com/cmangos/"$1".git --recursive --depth=1 && cd "$1"
+  local SERVER=""
+  local DB=""
+  if [[ "$1" == *classic* ]]; then
+    SERVER="mangos-classic"
+    DB="classic-db"
+  elif [[ "$1" == *tbc* ]]; then
+    SERVER="mangos-tbc"
+    DB="tbc-db"
   else
-    cd "$1" && git pull
+    SERVER="mangos-wotlk"
+    DB="wotlk-db"
+  fi
+  if [ ! -d "$SERVER" ]; then
+    git clone https://github.com/cmangos/${SERVER}.git --recursive --depth=1
+  fi
+  if [ ! -d "$DB" ]; then
+    git clone https://github.com/cmangos/${DB}.git --recursive --depth=1
   fi
 }
 
@@ -36,14 +45,24 @@ function buildImage() {
     TARGET="--target realmd"
     DOCKER_FILE_NAME="Dockerfile-server"
   fi
-  ARCH=""
-  if [[ "aarch64" == "${ARCHITECTURE}" ]]; then
-    ARCH="-${ARCHITECTURE}"
-  fi
   #https://stackoverflow.com/questions/22179301/how-do-you-run-apt-get-in-a-dockerfile-behind-a-proxy
   #export DOCKER_CONFIG=~/.docker
-  echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --build-arg MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE} --build-arg BASE_IMAGE=${BASE_IMAGE} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCH}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
-  docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 --build-arg MYSQL_BASE_IMAGE=${MYSQL_BASE_IMAGE} --build-arg BASE_IMAGE=${BASE_IMAGE} --add-host raw.githubusercontent.com:199.232.68.133 -t ${HUB_DOCKER_USERNAME}/cmangos-$1${ARCH}:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
+  if [[ "aarch64" == "${ARCHITECTURE}" ]]; then
+    local buildx_var=`docker buildx ls --format "{{.Name}}" | grep cmangos_buildx | head -n 1`
+    if [[ ${buildx_var} != "cmangos_buildx" ]]; then
+      #if use proxy https://stackoverflow.com/questions/73210141/running-buildkit-using-docker-buildx-behind-a-proxy
+      echo "docker buildx create --name cmangos_buildx --platform linux/amd64,linux/arm64"
+      docker buildx create --name cmangos_buildx --platform linux/amd64,linux/arm64
+    fi
+    echo "buildx use cmangos_buildx"
+    docker buildx use cmangos_buildx
+    echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
+    docker buildx build --platform linux/amd64,linux/arm64  --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
+  else
+    echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
+    docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
+  fi
+
 }
 
 declare -A DOCKER_REPO_NAMES
@@ -64,30 +83,31 @@ GLOBAL_MASTER_COMMIT["wotlk-db"]=""
 
 function autoBuildGitMaster() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
-    cd ~/autoBuildContext
+    cd /tmp/autoBuildContext
     initGitRepo ${key}
     CURRENT_MASTER_COMMIT=""
     if [ "${GLOBAL_MASTER_COMMIT["${key}"]}" == "" ]; then
+      cd ${key}
       CURRENT_MASTER_COMMIT=$(getRepoCurrentMasterCommit)
+      cd ..
       GLOBAL_MASTER_COMMIT["${key}"]="${CURRENT_MASTER_COMMIT}"
     else
       CURRENT_MASTER_COMMIT="${GLOBAL_MASTER_COMMIT["${key}"]}"
     fi
-    #获取server和realmd的docker repo
+    #获取SERVER和realmd的docker repo
     NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
     for NAME in ${NAMES[*]}; do
       if [[ "${NAME}" =~ "-extractors" ]] && [ "${EXTRACTORS_FLAG}" != "true" ]; then
         echo "skip build extractors"
         continue
       fi
-      cd ../file
       buildImage "${NAME}" "${CURRENT_MASTER_COMMIT}"
     done
   done
 }
 
 function modifyImageTag() {
-  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*${ARCHITECTURE}"); do
+  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
     REPO=${key%:*}
     if [ "${key#*:}" == "latest" ]; then
       continue
@@ -99,20 +119,51 @@ function modifyImageTag() {
 
 function imagePush() {
   docker login -u "$1" -p "$2" docker.io
-  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
-    echo "docker push $key to hub"
-    docker push "$key"
-  done
+  if [[ "aarch64" == "${ARCHITECTURE}" ]]; then
+    cd /tmp/autoBuildContext
+    for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter reference="${HUB_DOCKER_USERNAME}/*:*" | grep -v latest); do
+      local TAG=`echo $key | awk -F ":" '{print $2}'`
+      local REPOSITORY=`echo $key | awk -F ":" '{print $1}'`
+      local CMANGOS_CORE=`echo $key | awk -F "-" '{print $2}'`
+      local TYPE=`echo $REPOSITORY | awk -F "-" '{print $3}'`
+      echo "-----------"$TYPE
+      local TARGET=""
+      if [[ "$TYPE" == "server" ]]; then
+        TARGET="--target mangosd"
+      elif [[ "$TYPE" == "realmd" ]]; then
+        TARGET="--target realmd"
+      fi
 
+      local DOCKER_FILE_NAME=""
+      if [[ "$key" == *db* ]]; then
+        DOCKER_FILE_NAME="Dockerfile-db"
+      else
+        DOCKER_FILE_NAME="Dockerfile-server"
+      fi
+      #https://medium.com/@hassanahmad61931/docker-buildx-building-multi-platform-container-images-made-easy-304e1c3f00f1
+      echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
+      docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push
+      echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
+      docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push
+    done
+  else
+      for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
+        echo "docker push $key to hub"
+        docker push "$key"
+      done
+  fi
+
+
+  #manifest method
   #https://medium.com/@life-is-short-so-enjoy-it/docker-how-to-build-and-push-multi-arch-docker-images-to-docker-hub-64dea4931df9
   #https://www.docker.com/blog/multi-arch-build-and-images-the-simple-way/
   #https://github.com/docker/buildx?tab=readme-ov-file
   #https://docs.docker.com/reference/cli/docker/manifest/
-  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep  "^$HUB_DOCKER_USERNAME" | grep "$ARCHITECTURE"); do
-    repository=$(echo "${key}" | sed "s/-${ARCHITECTURE}//g")
-    echo "docker manifest create --amend $repository $key $repository"
-    docker manifest create --amend $repository $key $repository && docker manifest push $repository
-  done
+#  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep  "^$HUB_DOCKER_USERNAME" | grep "$ARCHITECTURE"); do
+#    repository=$(echo "${key}" | sed "s/-${ARCHITECTURE}//g")
+#    echo "docker manifest create --amend $repository $key $repository"
+#    docker manifest create --amend $repository $key $repository && docker manifest push $repository
+#  done
 }
 
 function imageDelete() {
@@ -125,33 +176,32 @@ function imageDelete() {
 }
 
 function initBuildContext() {
-  if [ ! -d ~/autoBuildContext ]; then
-    mkdir ~/autoBuildContext
+  if [ ! -d /tmp/autoBuildContext ]; then
+    mkdir /tmp/autoBuildContext
   fi
 
-  if [ ! -d ~/autoBuildContext/file ]; then
-    mkdir ~/autoBuildContext/file
+  if [ ! -d /tmp/autoBuildContext ]; then
+    mkdir /tmp/autoBuildContext
   fi
-  cp -f ../Dockerfile-* ~/autoBuildContext/file
+  cp -f ../Dockerfile-* /tmp/autoBuildContext
+  cp -f ../*.sh /tmp/autoBuildContext/
 }
 
 function amd64() {
-    echo "docker run --privileged --rm tonistiigi/binfmt --uninstall "$4
-    docker run --privileged --rm tonistiigi/binfmt --uninstall $4
+    if [ ! -z "$4" ]; then
+      echo "docker run --privileged --rm tonistiigi/binfmt --uninstall "$4
+    fi
     ARCHITECTURE=""
-    BASE_IMAGE="ubuntu:22.04"
-    MYSQL_BASE_IMAGE="mysql:5.7.37"
     autoBuildGitMaster
 }
 
 function aarch64() {
   if [[ $4 == "aarch64" ]]||[[ `uname -m` == "aarch64" ]]; then
-      BASE_IMAGE="arm64v8/ubuntu"
-      MYSQL_BASE_IMAGE="biarms/mysql:5.7.30-linux-arm64v8"
       if [[ `uname -m` != "aarch64" ]]; then
         #https://blog.csdn.net/edcbc/article/details/139366049
         #https://github.com/multiarch/qemu-user-static?tab=readme-ov-file
         #https://hub.docker.com/r/tonistiigi/binfmt
+        #https://bobcares.com/blog/mysql-5-7-arm64-docker/
         echo "docker run --privileged --rm tonistiigi/binfmt --install "$4
         docker run --privileged --rm tonistiigi/binfmt --install $4
       fi
@@ -160,11 +210,11 @@ function aarch64() {
 }
 ARCHITECTURE="$4"
 start_time=$(date +%s)
-initBuildContext
-imageDelete
-aarch64 "$@"
-amd64 "$@"
-modifyImageTag
-#imagePush "$@"
+#initBuildContext
+#imageDelete
+#aarch64 "$@"
+#amd64 "$@"
+#modifyImageTag
+imagePush "$@"
 cost_time=$(($(date +%s) - start_time))
 echo "build time is $((cost_time / 3600))hours $((cost_time % 3600 / 60))min $((cost_time % 3600 % 60))s"
