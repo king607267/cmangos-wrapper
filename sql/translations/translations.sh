@@ -62,8 +62,8 @@ fi
 echo "> Processing BroadcastTextLocales.sql."
 cp -f BroadcastTextLocales.sql BroadcastTextLocales_bak.sql
 sed -i "s/),(/);\nINSERT INTO \`broadcast_text_locale\` VALUES (/g" BroadcastTextLocales_bak.sql
-cat BroadcastTextLocales_bak.sql | grep -E "${LOCALE}|/\*|SET CHARACTER|SET NAMES|RUNCATE TABLE|LOCK TABLES|UNLOCK TABLES" >>BroadcastTextLocales_temp.sql
-${MYSQL_COMMAND} <BroadcastTextLocales_temp.sql
+cat BroadcastTextLocales_bak.sql | grep -E "${LOCALE}|/\*|SET CHARACTER|SET NAMES|RUNCATE TABLE|LOCK TABLES|UNLOCK TABLES" >>BroadcastTextLocales_tmp.sql
+${MYSQL_COMMAND} <BroadcastTextLocales_tmp.sql
 rm BroadcastTextLocales*.sql
 
 if [ ! -d translations_${CMANGOS_CORE} ]; then
@@ -107,7 +107,7 @@ if [ -f full.sql ]; then
   rm full.sql
 fi
 #https://github.com/cmangos/issues/issues/2331
-cat $(ls -I "Chinese_CommandHelp.sql" -I "*db_script_string.sql" -I "*Creature_AI_Texts.sql" -I "*creature_ai_texts.sql" | grep ".*\.sql") >full.sql
+cat $(ls -I "${TRANSLATIONS}_CommandHelp.sql" -I "*db_script_string.sql" -I "*Creature_AI_Texts.sql" -I "*creature_ai_texts.sql" | grep ".*\.sql") >full.sql
 sed -i 's/db_script/dbscript/' full.sql
 ${MYSQL_COMMAND} <full.sql
 echo "Translations end."

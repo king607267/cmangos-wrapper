@@ -14,33 +14,32 @@ RUN cd mangos-${CMANGOS_CORE} &&\
     tar -czf mangos-${CMANGOS_CORE}.tar.gz mangos-${CMANGOS_CORE} && \
     tar -czf ${CMANGOS_CORE}-db.tar.gz ${CMANGOS_CORE}-db && \
     rm -rf mangos-${CMANGOS_CORE}/* && rm -rf ${CMANGOS_CORE}-db/* && \
+    mkdir translations-db-${CMANGOS_CORE} && \
     FULLDB_FILE_ZIP=`cat InstallFullDB_tmp.sh | grep 'FULLDB_FILE_ZIP="' | awk -F "\"" '{print $2}'` && \
     sed -i 's/^FULLDB_FILE_ZIP=\".*$/FULLDB_FILE_ZIP="'$FULLDB_FILE_ZIP'"/' InstallFullDB.sh
 
-FROM mysql:8.0.36
+FROM mysql:8.0.39
 
 EXPOSE 3306
 
 ARG CMANGOS_CORE=classic
 
 ENV CMANGOS_CORE=${CMANGOS_CORE}
-
 ENV TZ=Asia/Shanghai
-
-ENV REALM_IP=127.0.0.1
-ENV REALM_PORT=8085
-ENV REALM_NAME=MaNGOS
 
 WORKDIR /docker-entrypoint-initdb.d/
 
-COPY --from=clonerepo mangos-${CMANGOS_CORE}.tar.gz mangos-${CMANGOS_CORE}.tar.gz
-COPY --from=clonerepo ${CMANGOS_CORE}-db.tar.gz ${CMANGOS_CORE}-db.tar.gz
+COPY --from=clonerepo mangos-${CMANGOS_CORE}.tar.gz .
+COPY --from=clonerepo ${CMANGOS_CORE}-db.tar.gz .
 COPY --from=clonerepo mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
-COPY --from=clonerepo ${CMANGOS_CORE}-db ${CMANGOS_CORE}-db
+COPY --from=clonerepo translations-db-${CMANGOS_CORE} translations-db-${CMANGOS_CORE}
+COPY --from=clonerepo translations-db-${CMANGOS_CORE} translations-db-${CMANGOS_CORE}
 COPY --from=clonerepo InstallFullDB.sh ${CMANGOS_CORE}-db/InstallFullDB.sh
 COPY launch_mysql.sh .
+COPY translations/translations-db-${CMANGOS_CORE}.tar.gz .
 
-RUN chmod -R 777 ${CMANGOS_CORE}-db && chmod -R 777 mangos-${CMANGOS_CORE} && chmod a+x launch_mysql.sh
+RUN chmod -R 777 ${CMANGOS_CORE}-db && chmod -R 777 mangos-${CMANGOS_CORE} && \
+    chmod -R 777 translations-db-${CMANGOS_CORE} && chmod a+x launch_mysql.sh && \
+    chmod -R 777 translations-db-${CMANGOS_CORE}
 
-#ENTRYPOINT ["./launch_mysql.sh"]
 CMD ["mysqld"]

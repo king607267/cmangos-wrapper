@@ -3,6 +3,108 @@ set -eo pipefail
 
 HUB_DOCKER_USERNAME="king607267"
 EXTRACTORS_FLAG=$3
+function localsFile(){
+local LOCALS_FILE_PATH="/tmp/autoBuildContext/translations"
+mkdir -p ${LOCALS_FILE_PATH}
+if [[ "$1" == *classic* ]]; then
+    # "classic use tbc BroadcastTextLocales."
+    CMANGOS_CORE="zero"
+    CMANGOS_CORE2="classic"
+    SQL_PATH="https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql"
+  elif [[ "$1" = *tbc* ]]; then
+    CMANGOS_CORE="one"
+    CMANGOS_CORE2="tbc"
+    SQL_PATH="https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql"
+  else
+    CMANGOS_CORE="two"
+    CMANGOS_CORE2="wotlk"
+    SQL_PATH="https://raw.githubusercontent.com/cmangos/wotlk-db/master/locales/BroadcastTextLocales.sql"
+fi
+local DB_FILES="translations-db-${CMANGOS_CORE2}"
+if [ ! -f "${LOCALS_FILE_PATH}/${DB_FILES}.tar.gz" ]; then
+  cd ${LOCALS_FILE_PATH}
+  if [ ! -d "translations_${CMANGOS_CORE}" ]; then
+    git clone https://github.com/MangosExtras/Mangos${CMANGOS_CORE}_Localised.git translations_${CMANGOS_CORE} -b master --recursive --depth=1
+  fi
+
+  local BTL_PREFIX="BroadcastTextLocales_${CMANGOS_CORE2}"
+  if [ ! -f "${BTL_PREFIX}.sql" ]; then
+    wget --no-check-certificate -O "${BTL_PREFIX}".sql ${SQL_PATH}
+  fi
+
+  local TRAN_PATH=`ls /tmp/autoBuildContext/translations/translations_${CMANGOS_CORE}/Translations`
+  mkdir -p ${DB_FILES}
+  cp -f "${BTL_PREFIX}.sql" "${BTL_PREFIX}_bak.sql"
+  for TRANS in ${TRAN_PATH}; do
+      if [ "${TRANS}" = "German" ]; then
+        LOCALE="deDE"
+      elif [ "${TRANS}" = "Spanish" ]; then
+        LOCALE="esES"
+      elif [ "${TRANS}" = "Spanish_South_American" ]; then
+        LOCALE="esMX"
+      elif [ "${TRANS}" = "French" ]; then
+        LOCALE="frFR"
+      elif [ "${TRANS}" = "Korean" ]; then
+        LOCALE="koKR"
+      elif [ "${TRANS}" = "Russian" ]; then
+        LOCALE="ruRU"
+      elif [ "${TRANS}" = "Taiwanese" ]; then
+        LOCALE="zhTW"
+      elif [ "${TRANS}" = "Italian" ]; then
+        LOCALE="itIT"
+      else
+        LOCALE="zhCN"
+      fi
+    echo "Processing ${BTL_PREFIX}_${LOCALE}.sql."
+    sed -i "s/),(/);\nINSERT INTO \`broadcast_text_locale\` VALUES (/g" "${BTL_PREFIX}_bak.sql"
+    cat "${BTL_PREFIX}_bak.sql" | grep -E "${LOCALE}|/\*|SET CHARACTER|SET NAMES|RUNCATE TABLE|LOCK TABLES|UNLOCK TABLES" >>"${BTL_PREFIX}_${LOCALE}.sql"
+    mkdir -p "${DB_FILES}/${TRANS}" && mv -f "${BTL_PREFIX}_${LOCALE}.sql" "${DB_FILES}/${TRANS}"
+
+    local SQL_123="1+2+3_${LOCALE}.sql"
+    echo "Processing ${SQL_123}."
+    local SQL_PATH="/tmp/autoBuildContext/translations/translations_${CMANGOS_CORE}"
+    if [ ! -f "${SQL_123}" ]; then
+      cat "${SQL_PATH}/1_LocaleTablePrepare.sql" >>${SQL_123}
+      echo -e >>${SQL_123}
+      cat "${SQL_PATH}/2_Add_NewLocalisationFields.sql" >>${SQL_123}
+      echo -e >>${SQL_123}
+      cat "${SQL_PATH}/3_InitialSaveEnglish.sql" >>${SQL_123}
+      #注释locales_command相关sql
+      sed -i 's/^INSERT.*\(command\).*$/-- &/' ${SQL_123}
+      sed -i '/^        ALTER.*\(command\).*/,/;$/s/^/-- &/' ${SQL_123}
+      sed -i '/^UPDATE.*\(command\).*/,/;$/s/^/-- &/' ${SQL_123}
+      #替换表名
+      sed -i 's/db_script/dbscript/' ${SQL_123}
+
+      #https://github.com/cmangos/issues/issues/2331
+      #注释creature_ai_texts,dbscript_string相关sql
+      sed -i 's/^INSERT.*\(creature_ai_texts\).*$/-- &/' ${SQL_123}
+      sed -i '/^        ALTER.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' ${SQL_123}
+      sed -i '/^UPDATE.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' ${SQL_123}
+
+      sed -i 's/^INSERT.*\(dbscript_string\).*$/-- &/' ${SQL_123}
+      sed -i '/^        ALTER.*\(dbscript_string\).*/,/;$/s/^/-- &/' ${SQL_123}
+      sed -i '/^UPDATE.*\(dbscript_string\).*/,/;$/s/^/-- &/' ${SQL_123}
+      mv -f ${SQL_123} "${DB_FILES}/${TRANS}"
+
+      local FULL_SQL="full_${LOCALE}.sql"
+      echo "Processing ${FULL_SQL}."
+      if [ ! -f "${FULL_SQL}" ]; then
+        cd "${LOCALS_FILE_PATH}/translations_${CMANGOS_CORE}/Translations/${TRANS}"
+        #https://github.com/cmangos/issues/issues/2331
+        cat $(ls -I "${TRANS}_CommandHelp.sql" -I "*db_script_string.sql" -I "*Creature_AI_Texts.sql" -I "*creature_ai_texts.sql" | grep ".*\.sql") >${FULL_SQL}
+        sed -i 's/db_script/dbscript/' ${FULL_SQL}
+        mv -f ${FULL_SQL} "${LOCALS_FILE_PATH}/${DB_FILES}/${TRANS}"
+        cd "${LOCALS_FILE_PATH}"
+      fi
+    fi
+  done
+  tar -czf "${DB_FILES}.tar.gz" ${DB_FILES} && chmod o+w "${DB_FILES}.tar.gz"
+  cd /tmp/autoBuildContext
+else
+  echo "skip Translations."
+fi
+}
 
 function initGitRepo() {
   local SERVER=""
@@ -101,6 +203,7 @@ function autoBuildGitMaster() {
         echo "skip build extractors"
         continue
       fi
+      localsFile "${NAME}"
       buildImage "${NAME}" "${CURRENT_MASTER_COMMIT}"
     done
   done
@@ -188,7 +291,7 @@ function initBuildContext() {
 }
 
 function amd64() {
-    if [ ! -z "$4" ]; then
+    if [ -n "$4" ]; then
       echo "docker run --privileged --rm tonistiigi/binfmt --uninstall "$4
     fi
     ARCHITECTURE=""
@@ -217,4 +320,4 @@ start_time=$(date +%s)
 #modifyImageTag
 imagePush "$@"
 cost_time=$(($(date +%s) - start_time))
-echo "build time is $((cost_time / 3600))hours $((cost_time % 3600 / 60))min $((cost_time % 3600 % 60))s"
+echo `date +"%H:%M:%S"`' build time is '$((cost_time / 3600))'hours '$((cost_time % 3600 / 60))'min '$((cost_time % 3600 % 60))'s'

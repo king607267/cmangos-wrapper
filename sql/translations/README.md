@@ -9,3 +9,4 @@ Chinese，French，German，Italian，Korean，Russian，Spanish，Spanish_South
 ```shell
 ./translations.sh
 ```
+注意:该脚本已经集成到[launch_mysql.sh](..%2F..%2Fdocker%2Flaunch_mysql.sh)通常情况下无需单独执行.
