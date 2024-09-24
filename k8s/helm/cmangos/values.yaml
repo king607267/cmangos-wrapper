@@ -2,33 +2,38 @@ cmangos:
   type: classic
 
 realmd:
+  nodeSelector: "kubernetes.io/arch: arm64"
   service:
     port: 3724
     type: LoadBalancer
   resources:
     requests:
-      cpu: "100m"
-      memory: "5Mi"
+      cpu: 0.1
+      memory: 5Mi
     limits:
-      cpu: "200m"
-      memory: "20Mi"
+      cpu: 0.2
+      memory: 20Mi
 
 server:
+  nodeSelector: "kubernetes.io/arch: arm64"
   service:
     port: 8085
     soa:
       port: 7878
     type: LoadBalancer
   resources:
-    limits:
-      cpu: "1"
-      memory: "1Gi"
     requests:
-      cpu: "100m"
-      memory: "650Mi"
+      cpu: 0.1
+      memory: 600Mi
+    limits:
+      cpu: 0.8
+      memory: 1Gi
 
 mysql:
-  nodeSelector: "h-p_ssd"
+  realm:
+    ip: ${realmIp}
+    name: ${realmName}
+  nodeSelector: "disk: h-p_ssd"
   service:
     type: LoadBalancer
   user: mangos
@@ -36,17 +41,18 @@ mysql:
   root_password: mangos
   port: 3306
   tz: Asia/Shanghai
+  i18n: Chinese #Chinese，French，German，Italian，Korean，Russian，Spanish，Spanish_South_American，Taiwanese
   resources:
     requests:
-      cpu: "100m"
-      memory: "150Mi"
+      cpu: 0.2
+      memory: 300Mi
     limits:
-      cpu: "800m"
-      memory: "350Mi"
+      cpu: 1
+      memory: 750Mi
 
 image:
   pullPolicy: Always
 
 nfs:
-  server: nfs.server
+  server: ${nfsServer}
   path: /mnt/user/share/WoW/docker

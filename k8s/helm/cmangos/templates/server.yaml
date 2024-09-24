@@ -40,6 +40,10 @@ spec:
       labels:
         app: {{ .Values.cmangos.type }}-server
     spec:
+      {{- if .Values.server.nodeSelector }}
+      nodeSelector:
+        {{ .Values.server.nodeSelector }}
+      {{- end }}
       initContainers:
         - name: check-mysql
           image: mysql

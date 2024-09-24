@@ -27,6 +27,10 @@ spec:
       labels:
         app: {{ .Values.cmangos.type }}-realmd
     spec:
+      {{- if .Values.realmd.nodeSelector }}
+      nodeSelector:
+        {{ .Values.realmd.nodeSelector }}
+      {{- end }}
       initContainers:
         - name: check-mysql
           image: mysql

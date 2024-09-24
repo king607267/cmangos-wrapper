@@ -29,7 +29,7 @@ spec:
     spec:
       {{- if .Values.mysql.nodeSelector }}
       nodeSelector:
-        disk: {{ .Values.mysql.nodeSelector }}
+        {{ .Values.mysql.nodeSelector }}
       {{- end }}
       containers:
         - image: king607267/cmangos-{{ .Values.cmangos.type }}-db
@@ -45,6 +45,12 @@ spec:
             {{- toYaml .Values.mysql.resources | nindent 12 }}
           name: {{ .Values.cmangos.type }}-mysql
           env:
+            - name: REALM_IP
+              value: {{ .Values.mysql.realm.ip }}
+            - name: I18N
+              value: {{ .Values.mysql.i18n }}
+            - name: REALM_NAME
+              value: {{ .Values.mysql.realm.name }}
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
