@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.cmangos.type }}-backup-job
+spec:
+  schedule: {{ .Values.job.dbBackup.schedule | quote }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: {{ .Values.job.dbBackup.ttlSecondsAfterFinished }}
+      template:
+        spec:
+          containers:
+            - name: {{ .Values.cmangos.type }}-backup
+              image: mysql
+              imagePullPolicy: IfNotPresent
+              command:
+                - sh
+                - -c
+                - | #!/bin/bash
+                  path="/dbBackup/{{ .Values.cmangos.type }}/"$(date '+%Y-%m-%d')
+                  mkdir -p $path && cd $path
+                  mysqldump --no-tablespaces -t -u$MYSQL_USER -p$MYSQL_PASSWORD -P{{ .Values.mysql.port }} -h{{ .Values.cmangos.type }}-mysql-svc \
+                  --databases {{ .Values.cmangos.type }}characters {{ .Values.cmangos.type }}realmd \
+                  --ignore-table={{ .Values.cmangos.type }}realmd.antispam_blacklist \
+                  --ignore-table={{ .Values.cmangos.type }}realmd.antispam_replacement \
+                  --ignore-table={{ .Values.cmangos.type }}realmd.antispam_unicode_replacement \
+                  --ignore-table={{ .Values.cmangos.type }}realmd.realmlist > "WoWDBback{{ .Values.cmangos.type }}_$(date '+%H%M').sql"
+                  echo "dump success! "$(ls -hl)
+              env:
+                - name: MYSQL_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.cmangos.type }}-secrets
+                      key: MYSQL_PASSWORD
+                - name: MYSQL_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.cmangos.type }}-secrets
+                      key: MYSQL_USER
+              volumeMounts:
+                - name: wow-nfs
+                  subPath: dbBackup
+                  mountPath: /dbBackup
+          volumes:
+            - nfs:
+                path: {{ .Values.nfs.path }}
+                server: {{ .Values.nfs.server }}
+              name: wow-nfs
+          restartPolicy: Never
+      backoffLimit: 0

@@ -31,8 +31,8 @@ server:
 
 mysql:
   realm:
-    ip: ${realmIp}
-    name: ${realmName}
+    ip: 127.0.0.1
+    name: MaNGOS
   nodeSelector: "disk: h-p_ssd"
   service:
     type: LoadBalancer
@@ -53,6 +53,23 @@ mysql:
 image:
   pullPolicy: Always
 
+# ┌───────────── minute (0 - 59)
+# │ ┌───────────── hour (0 - 23)
+# │ │ ┌───────────── day of the month (1 - 31)
+# │ │ │ ┌───────────── month (1 - 12)
+# │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday)
+# │ │ │ │ │                                   OR sun, mon, tue, wed, thu, fri, sat
+# │ │ │ │ │
+# │ │ │ │ │
+# * * * * *
+job:
+  changeIp:
+    schedule: "*/30 * * * *"
+    ttlSecondsAfterFinished: 900 #15min
+  dbBackup:
+    schedule: "0 18 * * *"#https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#writing-a-cronjob-spec
+    ttlSecondsAfterFinished: 14400 #4h
+
 nfs:
-  server: ${nfsServer}
+  server: 127.0.0.1
   path: /mnt/user/share/WoW/docker

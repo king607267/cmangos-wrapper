@@ -33,12 +33,12 @@ spec:
       {{- end }}
       initContainers:
         - name: check-mysql
-          image: mysql
+          image: arey/mysql-client
           command:
             - sh
             - -c
             - |            #!/bin/bash
-              until mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e ''; do
+              until mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e 'USE {{ .Values.cmangos.type }}realmd; DESCRIBE account;'; do
                 >&2 echo "MySQL is unavailable - sleeping-30s"
                 sleep 30
               done
