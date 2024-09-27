@@ -117,6 +117,7 @@ spec:
             - name: wow-nfs
               subPath: conf/{{ .Values.cmangos.type }}
               mountPath: /etc/mangos/conf
+      restartPolicy: {{ .Values.image.restartPolicy }}
       volumes:
         - nfs:
             path: {{ .Values.nfs.path }}

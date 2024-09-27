@@ -51,6 +51,8 @@ spec:
               value: {{ .Values.mysql.i18n }}
             - name: REALM_NAME
               value: {{ .Values.mysql.realm.name }}
+            - name: REALM_PORT
+              value: {{ .Values.mysql.realm.port | quote }}
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -77,3 +79,4 @@ spec:
           hostPath:
             path: /data/mysql/{{ .Values.cmangos.type }}
             type: DirectoryOrCreate
+      restartPolicy: {{ .Values.image.restartPolicy }}

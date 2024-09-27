@@ -73,3 +73,4 @@ spec:
           ports:
             - containerPort: 3724
               name: {{ .Values.cmangos.type }}-realmd
+      restartPolicy: {{ .Values.image.restartPolicy }}

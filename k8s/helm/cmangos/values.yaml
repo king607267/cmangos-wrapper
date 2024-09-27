@@ -27,12 +27,13 @@ server:
       memory: 600Mi
     limits:
       cpu: 0.8
-      memory: 1Gi
+      memory: 1024Mi
 
 mysql:
   realm:
     ip: 127.0.0.1
     name: MaNGOS
+    port: 8060
   nodeSelector: "disk: h-p_ssd"
   service:
     type: LoadBalancer
@@ -52,6 +53,7 @@ mysql:
 
 image:
   pullPolicy: Always
+  restartPolicy: Always
 
 # ┌───────────── minute (0 - 59)
 # │ ┌───────────── hour (0 - 23)
