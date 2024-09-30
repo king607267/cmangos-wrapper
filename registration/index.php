@@ -183,8 +183,18 @@ if (!$con) {
     }
     $link = $_SERVER['PHP_SELF'] . "?f=" . $flag . "&s=";
 
+    $callback = function ($a, $b) use ($sort, $sort_type) {
+        if ($a[$sort] == $b[$sort]) {
+            return 0;
+        }
+        if ($a[$sort] . $sort_type . $b[$sort]) {
+            return -1;
+        }
+        return 1;
+    };
+
     if (!empty($pl_array)) {
-        usort($pl_array, create_function('$a, $b', 'if ( $a[' . $sort . '] == $b[' . $sort . '] ) return 0; if ( $a[' . $sort . '] ' . $sort_type . ' $b[' . $sort . '] ) return -1; return 1;'));
+        usort($pl_array, $callback);
     }
 
 
