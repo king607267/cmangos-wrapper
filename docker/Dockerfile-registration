@@ -1,0 +1,8 @@
+FROM shinsenter/php:fpm-nginx-alpine
+
+RUN phpaddmod soap
+
+COPY registration /var/www/html/
+
+RUN sed -i "s/http {/http {\n    index index.html;\n    error_page 404 \/404.html;/" /etc/nginx/nginx.conf && \
+    sed -i "s/worker_processes auto;/worker_processes 2;/" /etc/nginx/nginx.conf

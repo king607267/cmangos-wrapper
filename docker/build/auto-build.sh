@@ -143,6 +143,8 @@ function buildImage() {
   elif [[ $1 =~ "-extractors" ]]; then
     TARGET="--target extractors"
     DOCKER_FILE_NAME="Dockerfile-server"
+  elif [[ $1 == "registration" ]]; then
+    DOCKER_FILE_NAME="Dockerfile-registration"
   else
     TARGET="--target realmd"
     DOCKER_FILE_NAME="Dockerfile-server"
@@ -168,6 +170,7 @@ function buildImage() {
 }
 
 declare -A DOCKER_REPO_NAMES
+DOCKER_REPO_NAMES["registration"]="registration"
 DOCKER_REPO_NAMES["mangos-classic"]="classic-server,classic-realmd,classic-extractors"
 DOCKER_REPO_NAMES["mangos-tbc"]="tbc-server,tbc-realmd,tbc-extractors"
 DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd,wotlk-extractors"
@@ -182,12 +185,13 @@ GLOBAL_MASTER_COMMIT["mangos-wotlk"]=""
 GLOBAL_MASTER_COMMIT["classic-db"]=""
 GLOBAL_MASTER_COMMIT["tbc-db"]=""
 GLOBAL_MASTER_COMMIT["wotlk-db"]=""
+GLOBAL_MASTER_COMMIT["registration"]="$(getRepoCurrentMasterCommit)"
 
 function autoBuildGitMaster() {
   for key in ${!DOCKER_REPO_NAMES[*]}; do
     cd /tmp/autoBuildContext
     initGitRepo ${key}
-    CURRENT_MASTER_COMMIT=""
+    local CURRENT_MASTER_COMMIT=""
     if [ "${GLOBAL_MASTER_COMMIT["${key}"]}" == "" ]; then
       cd ${key}
       CURRENT_MASTER_COMMIT=$(getRepoCurrentMasterCommit)
@@ -287,7 +291,8 @@ function initBuildContext() {
     mkdir /tmp/autoBuildContext
   fi
   cp -f ../Dockerfile-* /tmp/autoBuildContext
-  cp -f ../*.sh /tmp/autoBuildContext/
+  cp -f ../*.sh /tmp/autoBuildContext
+  cp -rf ../../registration /tmp/autoBuildContext
 }
 
 function amd64() {
@@ -313,11 +318,11 @@ function aarch64() {
 }
 ARCHITECTURE="$4"
 start_time=$(date +%s)
-#initBuildContext
+initBuildContext
 #imageDelete
-#aarch64 "$@"
-#amd64 "$@"
-#modifyImageTag
+aarch64 "$@"
+amd64 "$@"
+modifyImageTag
 imagePush "$@"
 cost_time=$(($(date +%s) - start_time))
 echo `date +"%H:%M:%S"`' build time is '$((cost_time / 3600))'hours '$((cost_time % 3600 / 60))'min '$((cost_time % 3600 % 60))'s'

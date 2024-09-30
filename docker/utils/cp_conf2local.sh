@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONTAINERS=("cwow60_server" "cwow70_server" "cwow80_server")
+CONTAINERS=("cwow60-server-1" "cwow70-server-1" "cwow80-server-1")
 VOLUME_CONF_PATH=$(pwd)/WoW/conf/
 
 for CONTAINER in "${CONTAINERS[@]}"; do
@@ -14,6 +14,7 @@ for CONTAINER in "${CONTAINERS[@]}"; do
   fi
   ID=$(docker container ls -a -f name="^$CONTAINER" --format "{{.ID}}")
   if [ -n "$ID" ]; then
+    mkdir -p $VOLUME_CONF_PATH$CORE
     echo "docker cp $ID:/etc/mangos/conf/ $VOLUME_CONF_PATH$CORE"
     docker cp "$ID:/etc/mangos/conf/" "$VOLUME_CONF_PATH$CORE"
   fi
