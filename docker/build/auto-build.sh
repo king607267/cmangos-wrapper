@@ -244,6 +244,8 @@ function imagePush() {
       local DOCKER_FILE_NAME=""
       if [[ "$key" == *db* ]]; then
         DOCKER_FILE_NAME="Dockerfile-db"
+      elif [[ "$key" == *registration* ]]; then
+        DOCKER_FILE_NAME="Dockerfile-registration"
       else
         DOCKER_FILE_NAME="Dockerfile-server"
       fi
