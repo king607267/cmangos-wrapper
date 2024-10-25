@@ -48,3 +48,26 @@ services:
        CHARACTER_DATABASE_INFO: db;3306;mangos;mangos;classiccharacters
        LOGS_DATABASE_INFO: db;3306;mangos;mangos;classiclogs
        TZ: Asia/Shanghai
+
+   registration:
+     tty: true
+     stdin_open: true
+     depends_on:
+       - db
+     image: king607267/cmangos-registration:latest
+     ports:
+       - "443:443"
+       - "80:80"
+     restart: "no"
+     environment:
+       MYSQL_HOST: db
+       MYSQL_PORT: 3306
+       MYSQL_USER: mangos
+       MYSQL_PASSWORD: mangos
+       CMANGOS_CORE: classic
+       REALM_HOST: realmd
+       REALM_PORT: 3724
+       REALM_NAME: MaNGOS
+       SOAP_HOST: server
+       SOAP_PORT: 7878
+       EXPANSION: 0 #0 classic,1 tbc,2 wotlk

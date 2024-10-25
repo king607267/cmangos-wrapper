@@ -15,7 +15,7 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: wow
-  name: {{ .Values.cmangos.type }}-server-soap
+  name: {{ .Values.cmangos.type }}-soap-svc
 spec:
   ports:
     - port: {{ .Values.server.service.soa.port }}
