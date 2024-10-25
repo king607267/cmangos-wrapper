@@ -72,6 +72,21 @@ job:
     schedule: "0 18 * * *"#https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#writing-a-cronjob-spec
     ttlSecondsAfterFinished: 14400 #4h
 
+registration:
+  nodeSelector: "kubernetes.io/arch: arm64"
+  ssl:
+    port: 443
+  http:
+    port: 80
+  expansion: 0 #0 classic,1 tbc,2 wotlk
+  resources:
+    requests:
+      cpu: 0.1
+      memory: 50Mi
+    limits:
+      cpu: 0.2
+      memory: 100Mi
+
 nfs:
   server: 127.0.0.1
   path: /mnt/user/share/WoW/docker

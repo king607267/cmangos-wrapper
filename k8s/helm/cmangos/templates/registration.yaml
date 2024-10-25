@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: wow
+  name: {{ .Values.cmangos.type }}-registration-svc
+spec:
+  ports:
+    - port: {{ .Values.registration.ssl.port }}
+      targetPort: 443
+      name: {{ .Values.cmangos.type }}-soap-ssl-port
+    - port: {{ .Values.registration.http.port }}
+      targetPort: 80
+      name: {{ .Values.cmangos.type }}-soap-http-port
+  selector:
+    app: {{ .Values.cmangos.type }}-registration
+  type: {{ .Values.mysql.service.type }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: wow
+  name: {{ .Values.cmangos.type }}-registration
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.cmangos.type }}-registration
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cmangos.type }}-registration
+    spec:
+      {{- if .Values.registration.nodeSelector }}
+      nodeSelector:
+        {{ .Values.registration.nodeSelector }}
+      {{- end }}
+      containers:
+        - image: king607267/cmangos-registration
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.registration.ssl.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.registration.resources | nindent 12 }}
+          name: {{ .Values.cmangos.type }}-registration
+          env:
+            - name: MYSQL_HOST
+              value: {{ .Values.cmangos.type }}-mysql-svc
+            - name: MYSQL_PORT
+              value: {{ .Values.mysql.port | quote }}
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.cmangos.type }}-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.cmangos.type }}-secrets
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.cmangos.type }}-secrets
+                  key: MYSQL_USER
+            - name: CMANGOS_CORE
+              value: {{ .Values.cmangos.type }}
+            - name: REALM_HOST
+              value: {{ .Values.cmangos.type }}-realmd-svc
+            - name: REALM_PORT
+              value: "3724"
+            - name: REALM_NAME
+              value: {{ .Values.mysql.realm.name }}
+            - name: SOAP_HOST
+              value: {{ .Values.cmangos.type }}-soap-svc
+            - name: SOAP_PORT
+              value: "7878"
+            - name: EXPANSION
+              value: {{ .Values.registration.expansion | quote }}
+            - name: I18N
+              value: {{ .Values.mysql.i18n }}
+          ports:
+            - containerPort: 80
+              name: soap-http
+            - containerPort: 443
+              name: soap-ssl
+      restartPolicy: {{ .Values.image.restartPolicy }}
