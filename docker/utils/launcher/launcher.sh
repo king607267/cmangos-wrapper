@@ -3,7 +3,7 @@ ip=`ping -c 1 ${wow_domain} | head -n1 | awk -F "(" '{print $2}' | awk -F ")" '{
 if [ -n "${ip}" ]; then
 	if [ -f "Data/wmo.MPQ" ]; then
     echo "set realmlist $ip:3760" > realmlist.wtf
-	elif [ -f "Data/lichking.wmo" ]; then
+	elif [ -f "Data/lichking.MPQ" ]; then
 	  echo "set realmlist $ip:3780" > Data/zhCN/realmlist.wtf
     echo "set realmlist $ip:3780" > Data/zhTW/realmlist.wtf
     echo "set realmlist $ip:3780" > Data/enUS/realmlist.wtf
