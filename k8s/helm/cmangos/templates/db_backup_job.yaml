@@ -2,6 +2,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ .Values.cmangos.type }}-backup-job
+  namespace: {{ .Values.cmangos.namespaceOverride }}
 spec:
   schedule: {{ .Values.job.dbBackup.schedule | quote }}
   jobTemplate:
@@ -19,24 +20,16 @@ spec:
                 - | #!/bin/bash
                   path="/dbBackup/{{ .Values.cmangos.type }}/"$(date '+%Y-%m-%d')
                   mkdir -p $path && cd $path
-                  mysqldump --no-tablespaces -t -u$MYSQL_USER -p$MYSQL_PASSWORD -P{{ .Values.mysql.port }} -h{{ .Values.cmangos.type }}-mysql-svc \
+                  mysqldump --no-tablespaces -t -u$MYSQL_USER -p$MYSQL_PASSWORD -P$MYSQL_PORT -h$MYSQL_HOST \
                   --databases {{ .Values.cmangos.type }}characters {{ .Values.cmangos.type }}realmd \
                   --ignore-table={{ .Values.cmangos.type }}realmd.antispam_blacklist \
                   --ignore-table={{ .Values.cmangos.type }}realmd.antispam_replacement \
                   --ignore-table={{ .Values.cmangos.type }}realmd.antispam_unicode_replacement \
                   --ignore-table={{ .Values.cmangos.type }}realmd.realmlist > "WoWDBback{{ .Values.cmangos.type }}_$(date '+%H%M').sql"
                   echo "dump success! "$(ls -hl)
-              env:
-                - name: MYSQL_PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: {{ .Values.cmangos.type }}-secrets
-                      key: MYSQL_PASSWORD
-                - name: MYSQL_USER
-                  valueFrom:
-                    secretKeyRef:
-                      name: {{ .Values.cmangos.type }}-secrets
-                      key: MYSQL_USER
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.cmangos.type }}-secrets
               volumeMounts:
                 - name: wow-nfs
                   subPath: dbBackup

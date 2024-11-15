@@ -1,7 +1,8 @@
+{{- if .Values.mysql.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: wow
+  namespace: {{ .Values.cmangos.namespaceOverride }}
   name: {{ .Values.cmangos.type }}-mysql-svc
 spec:
   ports:
@@ -40,7 +41,7 @@ spec:
                 - cat
                 - /var/lib/mysql/ready
             initialDelaySeconds: 5
-            periodSeconds: 20
+            periodSeconds: 15
           resources:
             {{- toYaml .Values.mysql.resources | nindent 12 }}
           name: {{ .Values.cmangos.type }}-mysql
@@ -80,3 +81,4 @@ spec:
             path: /data/mysql/{{ .Values.cmangos.type }}
             type: DirectoryOrCreate
       restartPolicy: {{ .Values.image.restartPolicy }}
+{{- end -}}

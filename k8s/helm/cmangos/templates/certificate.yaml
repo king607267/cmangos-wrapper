@@ -1,0 +1,15 @@
+{{- if .Values.registration.tls.enabled -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.cmangos.type }}-certificate
+  namespace: {{ .Values.cmangos.namespaceOverride }}
+spec:
+  secretName: {{ .Values.cmangos.type }}-dns-issued-secret
+  commonName: {{ .Values.registration.tls.url }}
+  dnsNames:
+    - {{ .Values.registration.tls.url }}
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer
+{{- end -}}

@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.cmangos.type }}-change-ip-job
+  namespace: {{ .Values.cmangos.namespaceOverride }}
+spec:
+  schedule: {{ .Values.job.changeIp.schedule | quote }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: {{ .Values.job.changeIp.ttlSecondsAfterFinished }}
+      template:
+        spec:
+          containers:
+            - name: {{ .Values.cmangos.type }}-update-ip
+              image: mysql
+              imagePullPolicy: IfNotPresent
+              command:
+                - sh
+                - -c
+                - | #!/bin/bash
+                  publicIp=`curl -v --connect-timeout 2 "{{ .Values.registration.tls.url }}"  2>&1 | grep Trying | awk -F "Trying " '{print $2}' | awk -F ":" '{print $1}'`
+                  if [[ -z "$publicIp" ]]; then
+                    echo "{{ .Values.registration.tls.url }} public ip not found."
+                  else
+                    echo "{{ .Values.registration.tls.url }} public ip is "$publicIp"."
+                    mysql -u$MYSQL_USER -p$MYSQL_PASSWORD -P$MYSQL_PORT -h$MYSQL_HOST -e "UPDATE {{ .Values.cmangos.type }}realmd.realmlist SET address='$publicIp' WHERE id=1;"
+                    echo "update public ip success!"
+                  fi
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.cmangos.type }}-secrets
+          restartPolicy: Never
+      backoffLimit: 0

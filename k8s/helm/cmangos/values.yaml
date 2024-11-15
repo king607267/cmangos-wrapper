@@ -1,8 +1,9 @@
 cmangos:
   type: classic
+  namespaceOverride: wow
 
 realmd:
-  nodeSelector: "kubernetes.io/arch: arm64"
+  nodeSelector: ""
   service:
     port: 3724
     type: LoadBalancer
@@ -15,7 +16,7 @@ realmd:
       memory: 20Mi
 
 server:
-  nodeSelector: "kubernetes.io/arch: arm64"
+  nodeSelector: ""
   service:
     port: 8085
     soa:
@@ -27,14 +28,16 @@ server:
       memory: 600Mi
     limits:
       cpu: 0.8
-      memory: 1024Mi
+      memory: 1544Mi
 
 mysql:
+  enabled: true
+  externalURL: ""
   realm:
     ip: 127.0.0.1
     name: MaNGOS
-    port: 8060
-  nodeSelector: "disk: h-p_ssd"
+    port: 8085
+  nodeSelector: ""
   service:
     type: LoadBalancer
   user: mangos
@@ -52,7 +55,7 @@ mysql:
       memory: 750Mi
 
 image:
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   restartPolicy: Always
 
 # ┌───────────── minute (0 - 59)
@@ -73,9 +76,24 @@ job:
     ttlSecondsAfterFinished: 14400 #4h
 
 registration:
-  nodeSelector: "kubernetes.io/arch: arm64"
-  ssl:
+  nodeSelector: ""
+  service:
+    type: LoadBalancer
+  ingress:
+    enabled: true
+    hosts:
+      - host: wow.example.com
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls: [ ]
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  tls:
+    enabled: false
     port: 443
+    url:
   http:
     port: 80
   expansion: 0 #0 classic,1 tbc,2 wotlk
@@ -89,4 +107,4 @@ registration:
 
 nfs:
   server: 127.0.0.1
-  path: /mnt/user/share/WoW/docker
+  path: /mnt/nfs/WoW

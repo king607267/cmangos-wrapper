@@ -288,10 +288,6 @@ function initBuildContext() {
   if [ ! -d /tmp/autoBuildContext ]; then
     mkdir /tmp/autoBuildContext
   fi
-
-  if [ ! -d /tmp/autoBuildContext ]; then
-    mkdir /tmp/autoBuildContext
-  fi
   cp -f ../Dockerfile-* /tmp/autoBuildContext
   cp -f ../*.sh /tmp/autoBuildContext
   cp -rf ../../registration /tmp/autoBuildContext
@@ -300,7 +296,6 @@ function initBuildContext() {
 function amd64() {
     if [ -n "$4" ]; then
       echo "docker run --privileged --rm tonistiigi/binfmt --uninstall "$4
-      docker run --privileged --rm tonistiigi/binfmt --uninstall $4
     fi
     ARCHITECTURE=""
     autoBuildGitMaster

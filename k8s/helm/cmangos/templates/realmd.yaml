@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: wow
+  namespace: {{ .Values.cmangos.namespaceOverride }}
   name: {{ .Values.cmangos.type }}-realmd-svc
 spec:
   ports:
@@ -14,7 +14,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: wow
+  namespace: {{ .Values.cmangos.namespaceOverride }}
   name: {{ .Values.cmangos.type }}-realmd
 spec:
   selector:
@@ -38,7 +38,7 @@ spec:
             - sh
             - -c
             - |            #!/bin/bash
-              until mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e 'USE {{ .Values.cmangos.type }}realmd; DESCRIBE account;'; do
+              until mysql -h $MYSQL_HOST -P${MYSQL_PORT:-3306} -u$MYSQL_USER -p$MYSQL_PASSWORD -e 'USE {{ .Values.cmangos.type }}realmd; DESCRIBE account;'; do
                 >&2 echo "MySQL is unavailable - sleeping-30s"
                 sleep 30
               done
