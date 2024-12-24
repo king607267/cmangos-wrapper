@@ -102,7 +102,7 @@ if [ ! -f "${LOCALS_FILE_PATH}/${DB_FILES}.tar.gz" ]; then
   tar -czf "${DB_FILES}.tar.gz" ${DB_FILES} && chmod o+w "${DB_FILES}.tar.gz"
   cd /tmp/autoBuildContext
 else
-  echo "skip Translations."
+  echo "skip Translations Processed."
 fi
 }
 
@@ -151,10 +151,10 @@ function buildImage() {
   fi
   #https://stackoverflow.com/questions/22179301/how-do-you-run-apt-get-in-a-dockerfile-behind-a-proxy
   #export DOCKER_CONFIG=~/.docker
-  if [[ "aarch64" == "${ARCHITECTURE}" ]]; then
     local buildx_var=`docker buildx ls --format "{{.Name}}" | grep cmangos_buildx | head -n 1`
     if [[ ${buildx_var} != "cmangos_buildx" ]]; then
       #if use proxy https://stackoverflow.com/questions/73210141/running-buildkit-using-docker-buildx-behind-a-proxy
+      #buildx set proxy https://github.com/docker/buildx/pull/170
       echo "docker buildx create --name cmangos_buildx --platform linux/amd64,linux/arm64"
       docker buildx create --name cmangos_buildx --platform linux/amd64,linux/arm64
     fi
@@ -162,11 +162,9 @@ function buildImage() {
     docker buildx use cmangos_buildx
     echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
     docker buildx build --platform linux/amd64,linux/arm64  --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
-  else
-    echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
-    docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
-  fi
 
+#    echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
+#    docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
 }
 
 declare -A DOCKER_REPO_NAMES
@@ -226,7 +224,6 @@ function modifyImageTag() {
 
 function imagePush() {
   docker login -u "$1" -p "$2" docker.io
-  if [[ "aarch64" == "${ARCHITECTURE}" ]]; then
     cd /tmp/autoBuildContext
     for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter reference="${HUB_DOCKER_USERNAME}/*:*" | grep -v latest); do
       local TAG=`echo $key | awk -F ":" '{print $2}'`
@@ -250,17 +247,16 @@ function imagePush() {
         DOCKER_FILE_NAME="Dockerfile-server"
       fi
       #https://medium.com/@hassanahmad61931/docker-buildx-building-multi-platform-container-images-made-easy-304e1c3f00f1
+      #https://codeberg.org/woodpecker-plugins/docker-buildx/issues/82
       echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
       docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push
       echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
       docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push
     done
-  else
-      for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
-        echo "docker push $key to hub"
-        docker push "$key"
-      done
-  fi
+#      for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
+#        echo "docker push $key to hub"
+#        docker push "$key"
+#      done
 
 
   #manifest method
@@ -276,9 +272,6 @@ function imagePush() {
 }
 
 function imageDelete() {
-#  for i in $(docker images --filter "dangling=true" --format "{{.ID}}" && docker images --filter=reference="${HUB_DOCKER_USERNAME}/*${ARCHITECTURE}:latest" --format "{{.ID}}"); do
-#    docker rmi -f $i
-#  done
   for i in $(docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:*" --format "{{.ID}}"); do
     docker rmi -f $i
   done
@@ -293,34 +286,23 @@ function initBuildContext() {
   cp -rf ../../registration /tmp/autoBuildContext
 }
 
-function amd64() {
-    if [ -n "$4" ]; then
-      echo "docker run --privileged --rm tonistiigi/binfmt --uninstall "$4
-    fi
-    ARCHITECTURE=""
-    autoBuildGitMaster
+function build() {
+  #https://blog.csdn.net/edcbc/article/details/139366049
+  #https://github.com/multiarch/qemu-user-static?tab=readme-ov-file
+  #https://hub.docker.com/r/tonistiigi/binfmt
+  #https://bobcares.com/blog/mysql-5-7-arm64-docker/
+  echo "docker run --privileged --rm tonistiigi/binfmt:master --install all"
+  docker run --privileged --rm tonistiigi/binfmt:master --install all
+  autoBuildGitMaster
+  echo "docker run --privileged --rm tonistiigi/binfmt:master --uninstall all"
+  docker run --privileged --rm tonistiigi/binfmt:master --uninstall all
 }
 
-function aarch64() {
-  if [[ $4 == "aarch64" ]]||[[ `uname -m` == "aarch64" ]]; then
-      if [[ `uname -m` != "aarch64" ]]; then
-        #https://blog.csdn.net/edcbc/article/details/139366049
-        #https://github.com/multiarch/qemu-user-static?tab=readme-ov-file
-        #https://hub.docker.com/r/tonistiigi/binfmt
-        #https://bobcares.com/blog/mysql-5-7-arm64-docker/
-        echo "docker run --privileged --rm tonistiigi/binfmt --install "$4
-        docker run --privileged --rm tonistiigi/binfmt --install $4
-      fi
-      autoBuildGitMaster
-  fi
-}
-ARCHITECTURE="$4"
 start_time=$(date +%s)
 initBuildContext
 #imageDelete
-aarch64 "$@"
-amd64 "$@"
+build "$@"
 modifyImageTag
-imagePush "$@"
+#imagePush "$@"
 cost_time=$(($(date +%s) - start_time))
 echo `date +"%H:%M:%S"`' build time is '$((cost_time / 3600))'hours '$((cost_time % 3600 / 60))'min '$((cost_time % 3600 % 60))'s'

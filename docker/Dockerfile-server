@@ -11,8 +11,8 @@ COPY mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
 RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata build-essential gcc g++ automake git-core autoconf make patch libmysql++-dev libtool libssl-dev grep binutils zlib1g-dev libbz2-dev cmake libboost-all-dev -y && \
     apt install g++-12 -y && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12 --slave /usr/bin/g++ g++ /usr/bin/g++-12 && \
-    mkdir build && cd build && \
-    cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_EXTRACTORS=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
+    mkdir build && cd build
+RUN cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_EXTRACTORS=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
     make ${THREAD_COUNT} && \
     make install ${THREAD_COUNT}
 
