@@ -2,8 +2,10 @@
 set -eo pipefail
 
 HUB_DOCKER_USERNAME="king607267"
-EXTRACTORS_FLAG=$3
 function localsFile(){
+if [[ "$1" != *-db ]]; then
+  return
+fi
 local LOCALS_FILE_PATH="/tmp/autoBuildContext/translations"
 mkdir -p ${LOCALS_FILE_PATH}
 if [[ "$1" == *classic* ]]; then
@@ -131,6 +133,68 @@ function getRepoCurrentMasterCommit() {
   echo $(git log -1 --pretty=format:'%h')
 }
 
+function createBuildx() {
+      PLATFORM="--platform linux/amd64"
+      local BUILDX_VAR=`docker buildx ls --format "{{.Name}} {{.DriverEndpoint}}" | grep cmangos_buildx`
+      if [ -z "$BUILDX_VAR" ]; then
+        #if use proxy https://stackoverflow.com/questions/73210141/running-buildkit-using-docker-buildx-behind-a-proxy
+        #buildx set proxy https://github.com/docker/buildx/pull/170
+        #https://dev.to/aboozar/build-docker-multi-platform-image-using-buildx-remote-builder-node-5631
+        #https://medium.com/@spurin/using-docker-and-multiple-buildx-nodes-for-simultaneous-cross-platform-builds-cee0f797d939
+        #https://www.docker.com/blog/multi-platform-docker-builds/
+        #https://medium.com/@hassanahmad61931/docker-buildx-building-multi-platform-container-images-made-easy-304e1c3f00f1
+        #https://codeberg.org/woodpecker-plugins/docker-buildx/issues/82
+        echo "docker buildx create --use --name cmangos_buildx \
+              --platform linux/amd64 \
+              --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=10000000 \
+              --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000 \
+              --driver-opt 'env.no_proxy='${NO_PROXY}' \
+              --driver-opt env.http_proxy=${HTTP_PROXY} \
+              --driver-opt env.https_proxy=${HTTPS_PROXY}"
+
+         docker buildx create --use --name cmangos_buildx \
+          --platform linux/amd64 \
+          --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=10000000 \
+          --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000 \
+          --driver-opt '"env.no_proxy='${NO_PROXY}'"' \
+          --driver-opt env.http_proxy=${HTTP_PROXY} \
+          --driver-opt env.https_proxy=${HTTPS_PROXY}
+        else
+          echo "cmangos_buildx already exists."
+        fi
+
+
+        if [ -n "$AARCH64_NODE_IP" ]; then
+        local AARCH64_NODE=`echo ${BUILDX_VAR} | grep ${AARCH64_NODE_IP}`;
+          if [ -z "$AARCH64_NODE" ]; then
+            echo "docker buildx create --name cmangos_buildx \
+                          --append \
+                          --node cmangos_buildx_aarch64 \
+                          --platform linux/arm64 \
+                          ssh://${AARCH64_NODE_IP} \
+                          --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=10000000 \
+                          --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000 \
+                          --driver-opt 'env.no_proxy='${NO_PROXY}' \
+                          --driver-opt env.http_proxy=${HTTP_PROXY} \
+                          --driver-opt env.https_proxy=${HTTPS_PROXY}"
+
+            docker buildx create --name cmangos_buildx \
+            --append \
+            --node cmangos_buildx_aarch64 \
+            --platform linux/arm64 \
+            ssh://${AARCH64_NODE_IP} \
+            --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=10000000 \
+            --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000 \
+            --driver-opt '"env.no_proxy='${NO_PROXY}'"' \
+            --driver-opt env.http_proxy=${HTTP_PROXY} \
+            --driver-opt env.https_proxy=${HTTPS_PROXY}
+          fi
+          PLATFORM=${PLATFORM}",linux/arm64"
+      else
+        PLATFORM="--load "${PLATFORM}
+      fi
+}
+
 function buildImage() {
   #构建
   DOCKER_FILE_NAME=""
@@ -151,20 +215,18 @@ function buildImage() {
   fi
   #https://stackoverflow.com/questions/22179301/how-do-you-run-apt-get-in-a-dockerfile-behind-a-proxy
   #export DOCKER_CONFIG=~/.docker
-    local buildx_var=`docker buildx ls --format "{{.Name}}" | grep cmangos_buildx | head -n 1`
-    if [[ ${buildx_var} != "cmangos_buildx" ]]; then
-      #if use proxy https://stackoverflow.com/questions/73210141/running-buildkit-using-docker-buildx-behind-a-proxy
-      #buildx set proxy https://github.com/docker/buildx/pull/170
-      echo "docker buildx create --name cmangos_buildx --platform linux/amd64,linux/arm64"
-      docker buildx create --name cmangos_buildx --platform linux/amd64,linux/arm64
-    fi
-    echo "buildx use cmangos_buildx"
-    docker buildx use cmangos_buildx
-    echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
-    docker buildx build --platform linux/amd64,linux/arm64  --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
+  if [ -z "$3" ]; then
+    createBuildx
+  fi
+  echo "buildx use cmangos_buildx"
+  docker buildx use cmangos_buildx
+  echo " docker buildx build ${PLATFORM} --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} . $3"
+  docker buildx build ${PLATFORM}  --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} . $3
+  echo " docker buildx build ${PLATFORM} --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:latest ${TARGET} -f ${DOCKER_FILE_NAME} . $3"
+  docker buildx build ${PLATFORM}  --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:latest ${TARGET} -f ${DOCKER_FILE_NAME} . $3
 
-#    echo " docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
-#    docker build --build-arg CMANGOS_CORE=${1%-*} --build-arg REVISION_NUM=$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
+#    echo " docker build --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
+#    docker build --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
 }
 
 declare -A DOCKER_REPO_NAMES
@@ -201,12 +263,8 @@ function autoBuildGitMaster() {
     #获取SERVER和realmd的docker repo
     NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
     for NAME in ${NAMES[*]}; do
-      if [[ "${NAME}" =~ "-extractors" ]] && [ "${EXTRACTORS_FLAG}" != "true" ]; then
-        echo "skip build extractors"
-        continue
-      fi
       localsFile "${NAME}"
-      buildImage "${NAME}" "${CURRENT_MASTER_COMMIT}"
+      buildImage "${NAME}" "${CURRENT_MASTER_COMMIT}" "${1}"
     done
   done
 }
@@ -222,7 +280,7 @@ function modifyImageTag() {
   done
 }
 
-function imagePush() {
+function imagePushOld() {
   docker login -u "$1" -p "$2" docker.io
     cd /tmp/autoBuildContext
     for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter reference="${HUB_DOCKER_USERNAME}/*:*" | grep -v latest); do
@@ -248,10 +306,10 @@ function imagePush() {
       fi
       #https://medium.com/@hassanahmad61931/docker-buildx-building-multi-platform-container-images-made-easy-304e1c3f00f1
       #https://codeberg.org/woodpecker-plugins/docker-buildx/issues/82
-      echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
-      docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push
-      echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
-      docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} --build-arg REVISION_NUM=$TAG -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push
+      echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
+      docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push
+      echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
+      docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push
     done
 #      for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
 #        echo "docker push $key to hub"
@@ -286,23 +344,21 @@ function initBuildContext() {
   cp -rf ../../registration /tmp/autoBuildContext
 }
 
-function build() {
-  #https://blog.csdn.net/edcbc/article/details/139366049
-  #https://github.com/multiarch/qemu-user-static?tab=readme-ov-file
-  #https://hub.docker.com/r/tonistiigi/binfmt
-  #https://bobcares.com/blog/mysql-5-7-arm64-docker/
-  echo "docker run --privileged --rm tonistiigi/binfmt:master --install all"
-  docker run --privileged --rm tonistiigi/binfmt:master --install all
+function imageBuild() {
   autoBuildGitMaster
-  echo "docker run --privileged --rm tonistiigi/binfmt:master --uninstall all"
-  docker run --privileged --rm tonistiigi/binfmt:master --uninstall all
 }
 
+function imagePush() {
+  autoBuildGitMaster "--push"
+}
+if [ -f /usr/bin/direnv ]; then
+  direnv allow
+fi
 start_time=$(date +%s)
 initBuildContext
 #imageDelete
-build "$@"
-modifyImageTag
-#imagePush "$@"
+imageBuild
+#modifyImageTag
+#imagePush
 cost_time=$(($(date +%s) - start_time))
 echo `date +"%H:%M:%S"`' build time is '$((cost_time / 3600))'hours '$((cost_time % 3600 / 60))'min '$((cost_time % 3600 % 60))'s'

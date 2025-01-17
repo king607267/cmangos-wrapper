@@ -28,8 +28,8 @@ elif [ "$CMANGOS_CORE" = "wotlk" ]; then
   CMANGOS_SERVER_PATH=mangos-wotlk
   CMANGOS_DB_FILE_PATH=wotlk-db
 fi
-tar -xzf "${CMANGOS_SERVER_PATH}".tar.gz
-tar -xzf "${CMANGOS_DB_FILE_PATH}".tar.gz
+tar -m --no-overwrite-dir -xzf "${CMANGOS_SERVER_PATH}".tar.gz
+tar -m --no-overwrite-dir -xzf "${CMANGOS_DB_FILE_PATH}".tar.gz
 echo "CREATE DATABASE \`${CMANGOS_WORLD_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
 echo "CREATE DATABASE \`${CMANGOS_CHARACTER_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
 echo "CREATE DATABASE \`${CMANGOS_REALMD_DB}\` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;" | "${mysql[@]}"
@@ -98,7 +98,7 @@ echo "WOW DATABASE CREATED..."
 cd /docker-entrypoint-initdb.d
 if [ -f "translations-db-${CMANGOS_CORE}.tar.gz" ]&&[ -n "${I18N}" ]; then
   echo "START TRANSLATIONS DB ${I18N}."
-  tar -xzf "translations-db-${CMANGOS_CORE}".tar.gz
+  tar -m --no-overwrite-dir -xzf "translations-db-${CMANGOS_CORE}".tar.gz
   "${mysql[@]}" -D${CMANGOS_WORLD_DB} < translations-db-"${CMANGOS_CORE}"/"${I18N}"/BroadcastTextLocales*.sql
   "${mysql[@]}" -D${CMANGOS_WORLD_DB} < translations-db-"${CMANGOS_CORE}"/"${I18N}"/1+2+3*.sql
   "${mysql[@]}" -D${CMANGOS_WORLD_DB} < translations-db-"${CMANGOS_CORE}"/"${I18N}"/full*.sql

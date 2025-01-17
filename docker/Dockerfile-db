@@ -1,4 +1,4 @@
-FROM bitnami/git AS clonerepo
+FROM ubuntu:22.04 AS clonerepo
 ARG CMANGOS_CORE=classic
 ARG REVISION_NUM
 
@@ -32,14 +32,12 @@ WORKDIR /docker-entrypoint-initdb.d/
 COPY --from=clonerepo mangos-${CMANGOS_CORE}.tar.gz .
 COPY --from=clonerepo ${CMANGOS_CORE}-db.tar.gz .
 COPY --from=clonerepo mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
-COPY --from=clonerepo translations-db-${CMANGOS_CORE} translations-db-${CMANGOS_CORE}
+COPY --from=clonerepo mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
 COPY --from=clonerepo translations-db-${CMANGOS_CORE} translations-db-${CMANGOS_CORE}
 COPY --from=clonerepo InstallFullDB.sh ${CMANGOS_CORE}-db/InstallFullDB.sh
-COPY launch_mysql.sh .
+COPY launch-mysql.sh .
 COPY translations/translations-db-${CMANGOS_CORE}.tar.gz .
 
-RUN chmod -R 777 ${CMANGOS_CORE}-db && chmod -R 777 mangos-${CMANGOS_CORE} && \
-    chmod -R 777 translations-db-${CMANGOS_CORE} && chmod a+x launch_mysql.sh && \
-    chmod -R 777 translations-db-${CMANGOS_CORE}
+RUN chown -R mysql:mysql . && chmod -R 755 .
 
 CMD ["mysqld"]

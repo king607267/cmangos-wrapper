@@ -5,7 +5,6 @@ FROM ubuntu:22.04 AS build-step
 ARG CMANGOS_CORE=classic
 ARG THREAD_COUNT="-j4"
 ENV TZ=Asia/Shanghai
-ARG REVISION_NUM
 
 COPY mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
 RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata build-essential gcc g++ automake git-core autoconf make patch libmysql++-dev libtool libssl-dev grep binutils zlib1g-dev libbz2-dev cmake libboost-all-dev -y && \
@@ -15,8 +14,8 @@ RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install tzdata 
 RUN cmake ../mangos-${CMANGOS_CORE} -DPCH=1 -DDEBUG=0 -DBUILD_EXTRACTORS=ON -DCMAKE_INSTALL_PREFIX=\../mangos-${CMANGOS_CORE}/run && \
     make ${THREAD_COUNT} && \
     make install ${THREAD_COUNT}
-
-RUN cd /mangos-${CMANGOS_CORE}/run/bin && tar -czf mangosd.tar.gz mangosd
+RUN cd /mangos-${CMANGOS_CORE}/run/bin && tar -czf mangosd.tar.gz mangosd && \
+    cd /mangos-${CMANGOS_CORE}/sql/updates && tar -czf updates-sql.tar.gz characters/ logs/ mangos/ realmd/
 
 #Runtime image realmd
 FROM ubuntu:22.04 AS realmd
@@ -24,24 +23,26 @@ FROM ubuntu:22.04 AS realmd
 EXPOSE 3724
 ARG CMANGOS_CORE
 ENV CMANGOS_CORE=${CMANGOS_CORE}
+ENV TARGET=realmd
 ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}realmd
 ENV TZ=Asia/Shanghai
 
 WORKDIR /etc/mangos/
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin/realmd ./bin/realmd
+COPY --from=build-step /mangos-${CMANGOS_CORE}/sql/updates/updates-sql.tar.gz ./updates-sql.tar.gz
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
+COPY run-realmd.sh ./run-realmd.sh
+COPY update-db-ver.sh ./update-db-ver.sh
 
-RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev mysql-client openssl && rm -rf /var/lib/apt/lists/*
 RUN useradd -ms /bin/bash realm && \
     mv conf/realmd.conf.dist conf/realmd.conf && \
-    echo "#!/bin/bash" >> run_realmd.sh && \
-    echo "sed -i \"s/^LoginDatabaseInfo =.*$/LoginDatabaseInfo = \$LOGIN_DATABASE_INFO/\" /etc/mangos/conf/realmd.conf" >> run_realmd.sh && \
-    echo "exec /etc/mangos/bin/realmd -c /etc/mangos/conf/realmd.conf" >> run_realmd.sh && \
-    chmod u+x run_realmd.sh && \
+    chmod u+x run-realmd.sh && \
+    chmod u+x update-db-ver.sh && \
     chown -R realm:realm .
 
 USER realm
-CMD ["./run_realmd.sh"]
+CMD ["./run-realmd.sh"]
 
 #Runtime image mangosd
 FROM ubuntu:22.04 AS mangosd
@@ -49,6 +50,7 @@ FROM ubuntu:22.04 AS mangosd
 EXPOSE 8085
 ARG CMANGOS_CORE
 ENV CMANGOS_CORE=${CMANGOS_CORE}
+ENV TARGET=mangosd
 ENV LOGIN_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}realmd
 ENV WORLD_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}mangos
 ENV CHARACTER_DATABASE_INFO=127.0.0.1;3306;root;mangos;${CMANGOS_CORE}characters
@@ -57,41 +59,37 @@ ENV TZ=Asia/Shanghai
 
 WORKDIR /etc/mangos/
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin/mangosd.tar.gz ./bin/mangosd.tar.gz
+COPY --from=build-step /mangos-${CMANGOS_CORE}/sql/updates/updates-sql.tar.gz ./updates-sql.tar.gz
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 COPY --from=build-step /mangos-${CMANGOS_CORE}/src/game/AuctionHouseBot/ahbot.conf.dist.in ./conf/ahbot.conf
+COPY run-mangos.sh ./run-mangos.sh
+COPY update-db-ver.sh ./update-db-ver.sh
 
-RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev mysql-client openssl && rm -rf /var/lib/apt/lists/*
 RUN useradd -ms /bin/bash mangos && \
     mv conf/mangosd.conf.dist conf/mangosd.conf && \
     sed -i 's/^DataDir = "."/DataDir = "\/etc\/mangos\/data"/' conf/mangosd.conf && \
-    echo "#!/bin/bash" >> run_cmangos.sh && \
-    echo "sed -i \"s/^LoginDatabaseInfo     =.*$/LoginDatabaseInfo     = \$LOGIN_DATABASE_INFO/\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
-    echo "sed -i \"s/^WorldDatabaseInfo     =.*$/WorldDatabaseInfo     = \$WORLD_DATABASE_INFO/\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
-    echo "sed -i \"s/^CharacterDatabaseInfo =.*$/CharacterDatabaseInfo = \$CHARACTER_DATABASE_INFO/\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
-    echo "sed -i \"s/^LogsDatabaseInfo      =.*$/LogsDatabaseInfo      = \$LOGS_DATABASE_INFO/\" /etc/mangos/conf/mangosd.conf" >> run_cmangos.sh && \
-    echo "tar -xzf /etc/mangos/bin/mangosd.tar.gz -C /etc/mangos/bin && rm /etc/mangos/bin/mangosd.tar.gz" >> run_cmangos.sh && \
-    echo "exec /etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf" >> run_cmangos.sh &&\
-    chmod u+x run_cmangos.sh && \
+    chmod u+x run-mangos.sh && \
+    chmod u+x update-db-ver.sh && \
     chown -R mangos:mangos .
 
 USER mangos
-CMD ["./run_cmangos.sh"]
+CMD ["./run-mangos.sh"]
 
 #Runtime image extractors
 FROM ubuntu:22.04 AS extractors
 
 ARG CMANGOS_CORE
 ENV CMANGOS_CORE=${CMANGOS_CORE}
+ENV TARGET=extractors
 ENV TZ=Asia/Shanghai
 
 WORKDIR /etc/mangos/
 
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/bin/tools ./tools
+COPY run-cp-extractors.sh ./run-cp-extractors.sh
 
-RUN echo "#!/bin/bash" >> run_cp_extractors.sh &&\
-    echo "mkdir -p /output/${CMANGOS_CORE}" >> run_cp_extractors.sh &&\
-    echo "cp ./tools/* /output/${CMANGOS_CORE}" >> run_cp_extractors.sh &&\
-    chmod u+x run_cp_extractors.sh
+RUN chmod u+x run-cp-extractors.sh
 
-CMD ["./run_cp_extractors.sh"]
+CMD ["./run-cp-extractors.sh"]
 

@@ -33,6 +33,10 @@ function exec() {
     cd /tmp/${REPO_DIR}/sql/updates/characters
     TABLE="character_db_version"
     DATABASE="${CMANGOS_CORE}characters"
+  elif [ "$1" = "characters" ]; then
+    cd /tmp/${REPO_DIR}/sql/updates/logs
+    TABLE="logs_db_version"
+    DATABASE="${CMANGOS_CORE}logs"
   fi
 
   NUM=0
