@@ -351,9 +351,7 @@ function imageBuild() {
 function imagePush() {
   autoBuildGitMaster "--push"
 }
-if [ -f /usr/bin/direnv ]; then
-  direnv allow
-fi
+
 start_time=$(date +%s)
 initBuildContext
 #imageDelete

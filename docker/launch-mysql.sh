@@ -104,6 +104,13 @@ if [ -f "translations-db-${CMANGOS_CORE}.tar.gz" ]&&[ -n "${I18N}" ]; then
   "${mysql[@]}" -D${CMANGOS_WORLD_DB} < translations-db-"${CMANGOS_CORE}"/"${I18N}"/full*.sql
   echo "END TRANSLATIONS DB ."
 fi
-touch /var/lib/mysql/ready #for k8s readinessProbe
+if [ -n "${CUSTOM_SQL_URL}" ]; then
+  echo "Trying to customSql."
+  curl -L -o "${CMANGOS_CORE}".sql "${CUSTOM_SQL_URL}"/"${CMANGOS_CORE}".sql
+  "${mysql[@]}"  < "${CMANGOS_CORE}".sql
+  echo "END customSql."
+fi
+echo "USE ${CMANGOS_CORE}realmd;CREATE TABLE IF NOT EXISTS db_ready(id int); ;" | "${mysql[@]}" #for k8s readinessProbe
+touch /var/lib/mysql/ready #for k8s readinessProbe Delete in the future
 echo "COMPLETED."
 echo
