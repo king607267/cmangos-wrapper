@@ -106,8 +106,8 @@ if [ -f "translations-db-${CMANGOS_CORE}.tar.gz" ]&&[ -n "${I18N}" ]; then
 fi
 if [ -n "${CUSTOM_SQL_URL}" ]; then
   echo "Trying to customSql."
-  curl -L -o "${CMANGOS_CORE}".sql "${CUSTOM_SQL_URL}"/"${CMANGOS_CORE}".sql
-  "${mysql[@]}"  < "${CMANGOS_CORE}".sql
+  curl -L -o "${CMANGOS_CORE}-db"/"${CMANGOS_CORE}".sql "${CUSTOM_SQL_URL}"/"${CMANGOS_CORE}".sql
+  "${mysql[@]}" < "${CMANGOS_CORE}-db"/"${CMANGOS_CORE}".sql
   echo "END customSql."
 fi
 echo "USE ${CMANGOS_CORE}realmd;CREATE TABLE IF NOT EXISTS db_ready(id int); ;" | "${mysql[@]}" #for k8s readinessProbe
