@@ -33,7 +33,7 @@ spec:
         {{ .Values.mysql.nodeSelector }}
       {{- end }}
       containers:
-        - image: king607267/cmangos-{{ .Values.cmangos.type }}-db
+        - image: "king607267/cmangos-{{ .Values.cmangos.type }}-db:{{ .Values.mysql.tagName }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           readinessProbe:
             exec:
@@ -50,6 +50,8 @@ spec:
               value: {{ .Values.mysql.realm.ip }}
             - name: I18N
               value: {{ .Values.mysql.i18n }}
+            - name: CUSTOM_SQL_URL
+              value: {{ .Values.mysql.custom_sql_URL }}
             - name: REALM_NAME
               value: {{ .Values.mysql.realm.name }}
             - name: REALM_PORT

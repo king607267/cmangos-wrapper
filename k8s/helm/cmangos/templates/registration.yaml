@@ -1,3 +1,4 @@
+{{- if .Values.registration.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -36,7 +37,7 @@ spec:
         {{ .Values.registration.nodeSelector }}
       {{- end }}
       containers:
-        - image: king607267/cmangos-registration
+        - image: "king607267/cmangos-registration:{{ .Values.registration.tagName }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           readinessProbe:
             tcpSocket:
@@ -92,3 +93,4 @@ spec:
             - containerPort: 443
               name: soap-ssl
       restartPolicy: {{ .Values.image.restartPolicy }}
+{{ end }}

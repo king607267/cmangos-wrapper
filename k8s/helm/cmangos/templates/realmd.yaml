@@ -1,3 +1,4 @@
+{{- if .Values.realmd.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -38,7 +39,7 @@ spec:
             - sh
             - -c
             - |            #!/bin/bash
-              until mysql -h $MYSQL_HOST -P${MYSQL_PORT:-3306} -u$MYSQL_USER -p$MYSQL_PASSWORD -e 'USE {{ .Values.cmangos.type }}realmd; DESCRIBE account;'; do
+              until mysql -h $MYSQL_HOST -P${MYSQL_PORT:-3306} -u$MYSQL_USER -p$MYSQL_PASSWORD -e 'USE {{ .Values.cmangos.type }}realmd; DESCRIBE db_ready;'; do
                 >&2 echo "MySQL is unavailable - sleeping-30s"
                 sleep 30
               done
@@ -46,7 +47,7 @@ spec:
             - secretRef:
                 name: {{ .Values.cmangos.type }}-secrets
       containers:
-        - image: king607267/cmangos-{{ .Values.cmangos.type }}-realmd
+        - image: "king607267/cmangos-{{ .Values.cmangos.type }}-realmd:{{ .Values.realmd.tagName }}"
           name: {{ .Values.cmangos.type }}-realmd
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           readinessProbe:
@@ -74,3 +75,4 @@ spec:
             - containerPort: 3724
               name: {{ .Values.cmangos.type }}-realmd
       restartPolicy: {{ .Values.image.restartPolicy }}
+{{ end }}

@@ -1,3 +1,4 @@
+{{- if .Values.mysql.enabled -}}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -31,3 +32,4 @@ spec:
                     name: {{ .Values.cmangos.type }}-secrets
           restartPolicy: Never
       backoffLimit: 0
+{{ end }}

@@ -1,3 +1,4 @@
+{{ if .Values.server.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -51,7 +52,7 @@ spec:
             - sh
             - -c
             - | #!/bin/bash
-              until mysql -h$MYSQL_HOST -P${MYSQL_PORT:-3306} -u$MYSQL_USER -p$MYSQL_PASSWORD -e 'USE {{ .Values.cmangos.type }}realmd; DESCRIBE account;'; do
+              until mysql -h$MYSQL_HOST -P${MYSQL_PORT:-3306} -u$MYSQL_USER -p$MYSQL_PASSWORD -e 'USE {{ .Values.cmangos.type }}realmd; DESCRIBE db_ready;'; do
                 >&2 echo "MySQL is unavailable - sleeping-15s"
                 sleep 15
               done
@@ -60,7 +61,7 @@ spec:
                 name: {{ .Values.cmangos.type }}-secrets
       terminationGracePeriodSeconds: 120
       containers:
-        - image: king607267/cmangos-{{ .Values.cmangos.type }}-server
+        - image: "king607267/cmangos-{{ .Values.cmangos.type }}-server:{{ .Values.server.tagName }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           readinessProbe:
             tcpSocket:
@@ -123,3 +124,4 @@ spec:
             path: {{ .Values.nfs.path }}
             server: {{ .Values.nfs.server }}
           name: wow-nfs
+{{ end }}

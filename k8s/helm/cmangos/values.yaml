@@ -3,6 +3,8 @@ cmangos:
   namespaceOverride: wow
 
 realmd:
+  enabled: true
+  tagName: latest
   nodeSelector: ""
   service:
     port: 3724
@@ -16,6 +18,8 @@ realmd:
       memory: 20Mi
 
 server:
+  enabled: true
+  tagName: latest
   nodeSelector: ""
   service:
     port: 8085
@@ -32,6 +36,8 @@ server:
 
 mysql:
   enabled: true
+  tagName: latest
+  custom_sql_URL: #Execute after the database is ready for example import accounts
   externalURL: ""
   realm:
     ip: 127.0.0.1
@@ -42,7 +48,7 @@ mysql:
     type: LoadBalancer
   user: mangos
   password: mangos
-  root_password: mangos
+  rootPassword: mangos
   port: 3306
   tz: Asia/Shanghai
   i18n: Chinese #Chinese，French，German，Italian，Korean，Russian，Spanish，Spanish_South_American，Taiwanese
@@ -76,6 +82,8 @@ job:
     ttlSecondsAfterFinished: 14400 #4h
 
 registration:
+  enabled: true
+  tagName: latest
   nodeSelector: ""
   service:
     type: LoadBalancer
