@@ -217,6 +217,8 @@ function buildImage() {
   #export DOCKER_CONFIG=~/.docker
   if [ -z "$3" ]; then
     createBuildx
+  else
+    PLATFORM="--platform linux/amd64,linux/arm64"
   fi
   echo "buildx use cmangos_buildx"
   docker buildx use cmangos_buildx
