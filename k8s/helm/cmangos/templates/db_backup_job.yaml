@@ -1,4 +1,5 @@
 {{- if .Values.mysql.enabled -}}
+{{- if .Values.mysql.dbBackupJob.enabled -}}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -42,4 +43,5 @@ spec:
               name: wow-nfs
           restartPolicy: Never
       backoffLimit: 0
+{{ end }}
 {{ end }}

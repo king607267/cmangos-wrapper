@@ -36,8 +36,12 @@ server:
 
 mysql:
   enabled: true
+  changeIpJob:
+    enabled: true
+  dbBackupJob:
+    enabled: true
   tagName: latest
-  custom_sql_URL: #Execute after the database is ready for example import accounts
+  customSqlURL: #Execute after the database is ready for example import accounts
   externalURL: ""
   realm:
     ip: 127.0.0.1
@@ -87,17 +91,6 @@ registration:
   nodeSelector: ""
   service:
     type: LoadBalancer
-  ingress:
-    enabled: true
-    hosts:
-      - host: wow.example.com
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls: [ ]
-    #  - secretName: chart-example-tls
-    #    hosts:
-    #      - chart-example.local
   tls:
     enabled: false
     port: 443
@@ -112,6 +105,18 @@ registration:
     limits:
       cpu: 0.2
       memory: 100Mi
+
+gateway:
+  realmd:
+    port: 3724
+  server:
+    port: 8085
+  registration:
+    domain: wow.example.com
+    port: 80
+    tls:
+      enabled: false
+      port: 443
 
 nfs:
   server: 127.0.0.1

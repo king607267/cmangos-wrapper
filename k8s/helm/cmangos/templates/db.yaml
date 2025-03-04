@@ -51,7 +51,7 @@ spec:
             - name: I18N
               value: {{ .Values.mysql.i18n }}
             - name: CUSTOM_SQL_URL
-              value: {{ .Values.mysql.custom_sql_URL }}
+              value: {{ .Values.mysql.customSqlURL }}
             - name: REALM_NAME
               value: {{ .Values.mysql.realm.name }}
             - name: REALM_PORT

@@ -8,11 +8,22 @@ helm repo add jetstack https://charts.jetstack.io
 helm upgrade --install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
-  --set crds.enabled=true
+  --set crds.enabled=true \
+  --set featureGates=ExperimentalGatewayAPISupport=true
 
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-  --namespace ingress-nginx --create-namespace
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/standard-install.yaml
+helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.3.0 -n envoy-gateway-system --create-namespace
+
+#https://stackoverflow.com/questions/69802098/nginx-ingress-helm-deployment-tcp-services-configmap-argument-not-found
+#helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+#helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+#  --namespace ingress-nginx --create-namespace \
+#  --set tcp.8060="wow/classic-server-svc:8085" \
+#  --set tcp.3760="wow/classic-realmd-svc:3724" \
+#  --set tcp.8070="wow/tbc-server-svc:8085" \
+#  --set tcp.3770="wow/tbc-realmd-svc:3724" \
+#  --set tcp.8080="wow/wotlk-realmd-svc:8085" \
+#  --set tcp.3780="wow/wotlk-realmd-svc:3724"
 
 helm repo add cert-manager-alidns-webhook https://devmachine-fr.github.io/cert-manager-alidns-webhook
 helm upgrade --install alidns-webhook cert-manager-alidns-webhook/alidns-webhook \
@@ -80,5 +91,6 @@ spec:
     - ${metallbPoolName}
 EOF
 
-kubectl wait --for=condition=Ready pod --all -n ingress-nginx --timeout=300s
+#kubectl wait --for=condition=Ready pod --all -n ingress-nginx --timeout=300s
 kubectl wait --for=condition=Ready pod --all -n metallb-system --timeout=300s
+kubectl wait --for=condition=Available deployment/envoy-gateway -n envoy-gateway-system --timeout=300s
