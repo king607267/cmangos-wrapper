@@ -7,37 +7,38 @@ if [[ "$1" != *-db ]]; then
   return
 fi
 local LOCALS_FILE_PATH="/tmp/autoBuildContext/translations"
+local BROADCAST_PATH
 mkdir -p ${LOCALS_FILE_PATH}
 if [[ "$1" == *classic* ]]; then
     # "classic use tbc BroadcastTextLocales."
     CMANGOS_CORE="zero"
     CMANGOS_CORE2="classic"
-    SQL_PATH="https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql"
+    BROADCAST_PATH="https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql"
   elif [[ "$1" = *tbc* ]]; then
     CMANGOS_CORE="one"
     CMANGOS_CORE2="tbc"
-    SQL_PATH="https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql"
+    BROADCAST_PATH="https://raw.githubusercontent.com/cmangos/tbc-db/master/locales/BroadcastTextLocales.sql"
   else
     CMANGOS_CORE="two"
     CMANGOS_CORE2="wotlk"
-    SQL_PATH="https://raw.githubusercontent.com/cmangos/wotlk-db/master/locales/BroadcastTextLocales.sql"
+    BROADCAST_PATH="https://raw.githubusercontent.com/cmangos/wotlk-db/master/locales/BroadcastTextLocales.sql"
 fi
 local DB_FILES="translations-db-${CMANGOS_CORE2}"
 if [ ! -f "${LOCALS_FILE_PATH}/${DB_FILES}.tar.gz" ]; then
   cd ${LOCALS_FILE_PATH}
   if [ ! -d "translations_${CMANGOS_CORE}" ]; then
-    git clone https://github.com/MangosExtras/Mangos${CMANGOS_CORE}_Localised.git translations_${CMANGOS_CORE} -b master --recursive --depth=1
+    git clone https://github.com/mangos${CMANGOS_CORE}/database.git translations_${CMANGOS_CORE} -b master --recursive --depth=1
   fi
 
   local BTL_PREFIX="BroadcastTextLocales_${CMANGOS_CORE2}"
   if [ ! -f "${BTL_PREFIX}.sql" ]; then
-    wget --no-check-certificate -O "${BTL_PREFIX}".sql ${SQL_PATH}
+    wget --no-check-certificate -O "${BTL_PREFIX}".sql ${BROADCAST_PATH}
   fi
 
-  local TRAN_PATH=`ls /tmp/autoBuildContext/translations/translations_${CMANGOS_CORE}/Translations`
+  local LOACL_PATH=`ls /tmp/autoBuildContext/translations/translations_${CMANGOS_CORE}/Translations/Translations`
   mkdir -p ${DB_FILES}
   cp -f "${BTL_PREFIX}.sql" "${BTL_PREFIX}_bak.sql"
-  for TRANS in ${TRAN_PATH}; do
+  for TRANS in ${LOACL_PATH}; do
       if [ "${TRANS}" = "German" ]; then
         LOCALE="deDE"
       elif [ "${TRANS}" = "Spanish" ]; then
@@ -64,7 +65,7 @@ if [ ! -f "${LOCALS_FILE_PATH}/${DB_FILES}.tar.gz" ]; then
 
     local SQL_123="1+2+3_${LOCALE}.sql"
     echo "Processing ${SQL_123}."
-    local SQL_PATH="/tmp/autoBuildContext/translations/translations_${CMANGOS_CORE}"
+    local SQL_PATH="/tmp/autoBuildContext/translations/translations_${CMANGOS_CORE}/Translations"
     if [ ! -f "${SQL_123}" ]; then
       cat "${SQL_PATH}/1_LocaleTablePrepare.sql" >>${SQL_123}
       echo -e >>${SQL_123}
@@ -92,7 +93,7 @@ if [ ! -f "${LOCALS_FILE_PATH}/${DB_FILES}.tar.gz" ]; then
       local FULL_SQL="full_${LOCALE}.sql"
       echo "Processing ${FULL_SQL}."
       if [ ! -f "${FULL_SQL}" ]; then
-        cd "${LOCALS_FILE_PATH}/translations_${CMANGOS_CORE}/Translations/${TRANS}"
+        cd "${LOCALS_FILE_PATH}/translations_${CMANGOS_CORE}/Translations/Translations/${TRANS}"
         #https://github.com/cmangos/issues/issues/2331
         cat $(ls -I "${TRANS}_CommandHelp.sql" -I "*db_script_string.sql" -I "*Creature_AI_Texts.sql" -I "*creature_ai_texts.sql" | grep ".*\.sql") >${FULL_SQL}
         sed -i 's/db_script/dbscript/' ${FULL_SQL}
