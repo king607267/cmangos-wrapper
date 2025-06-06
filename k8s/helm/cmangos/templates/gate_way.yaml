@@ -13,6 +13,10 @@ metadata:
   name: {{ .Values.cmangos.type }}-gateway
 spec:
   gatewayClassName: {{ .Values.cmangos.type }}-gateway-class
+  addresses:
+    - address:
+      type: IPAddress
+      value: {{ .Values.gateway.ip }}
   listeners:
     - name: server
       protocol: TCP
