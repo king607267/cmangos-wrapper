@@ -107,6 +107,7 @@ registration:
       memory: 100Mi
 
 gateway:
+  ip: 127.0.0.1
   realmd:
     port: 3724
   server:
