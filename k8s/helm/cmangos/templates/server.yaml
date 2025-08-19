@@ -52,7 +52,7 @@ spec:
             - sh
             - -c
             - | #!/bin/bash
-              until mysql -h$MYSQL_HOST -P${MYSQL_PORT:-3306} -u$MYSQL_USER -p$MYSQL_PASSWORD -e 'USE {{ .Values.cmangos.type }}realmd; DESCRIBE db_ready;'; do
+              until mysql --connect-timeout=5 -h$MYSQL_HOST -P${MYSQL_PORT:-3306} -u$MYSQL_USER -p$MYSQL_PASSWORD -e 'USE {{ .Values.cmangos.type }}realmd; DESCRIBE db_ready;'; do
                 >&2 echo "MySQL is unavailable - sleeping-15s"
                 sleep 15
               done

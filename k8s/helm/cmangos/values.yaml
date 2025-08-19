@@ -37,12 +37,12 @@ server:
 mysql:
   enabled: true
   changeIpJob:
-    enabled: true
+    enabled: false
   dbBackupJob:
-    enabled: true
+    enabled: false
   tagName: latest
   customSqlURL: #Execute after the database is ready for example import accounts
-  externalURL: ""
+  externalName: "" #For external databases
   realm:
     ip: 127.0.0.1
     name: MaNGOS

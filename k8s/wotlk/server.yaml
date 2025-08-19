@@ -34,7 +34,7 @@ spec:
             - sh
             - -c
             - |            #!/bin/bash
-              until mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e ''; do
+              until mysql --connect-timeout=5 -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e ''; do
                 >&2 echo "MySQL is unavailable - sleeping-30s"
                 sleep 30
               done
@@ -124,7 +124,7 @@ spec:
             - sh
             - -c
             - |            #!/bin/bash
-              until mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e ''; do
+              until mysql --connect-timeout=5 -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD -e ''; do
                 >&2 echo "MySQL is unavailable - sleeping-30s"
                 sleep 30
               done

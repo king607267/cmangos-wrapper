@@ -200,7 +200,9 @@ function buildImage() {
   #构建
   DOCKER_FILE_NAME=""
   TARGET=""
-  if [[ $1 =~ "-db" ]]; then
+  if [[ $1 =~ "3in1-db" ]]; then
+    DOCKER_FILE_NAME="Dockerfile-3in1-db"
+  elif [[ $1 =~ "-db" ]]; then
     DOCKER_FILE_NAME="Dockerfile-db"
   elif [[ $1 =~ "-server" ]]; then
     TARGET="--target mangosd"
@@ -232,14 +234,19 @@ function buildImage() {
 #    docker build --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
 }
 
-declare -A DOCKER_REPO_NAMES
-DOCKER_REPO_NAMES["registration"]="registration"
-DOCKER_REPO_NAMES["mangos-classic"]="classic-server,classic-realmd,classic-extractors"
-DOCKER_REPO_NAMES["mangos-tbc"]="tbc-server,tbc-realmd,tbc-extractors"
-DOCKER_REPO_NAMES["mangos-wotlk"]="wotlk-server,wotlk-realmd,wotlk-extractors"
-DOCKER_REPO_NAMES["classic-db"]="classic-db"
-DOCKER_REPO_NAMES["tbc-db"]="tbc-db"
-DOCKER_REPO_NAMES["wotlk-db"]="wotlk-db"
+declare -A DOCKER_REPO_NAMES_SERVER
+DOCKER_REPO_NAMES_SERVER["registration"]="registration"
+DOCKER_REPO_NAMES_SERVER["mangos-classic"]="classic-server,classic-realmd,classic-extractors"
+DOCKER_REPO_NAMES_SERVER["mangos-tbc"]="tbc-server,tbc-realmd,tbc-extractors"
+DOCKER_REPO_NAMES_SERVER["mangos-wotlk"]="wotlk-server,wotlk-realmd,wotlk-extractors"
+
+declare -A DOCKER_REPO_NAMES_DB
+DOCKER_REPO_NAMES_DB["classic-db"]="classic-db"
+DOCKER_REPO_NAMES_DB["tbc-db"]="tbc-db"
+DOCKER_REPO_NAMES_DB["wotlk-db"]="wotlk-db"
+
+declare -A DOCKER_REPO_NAMES_3IN1_DB
+DOCKER_REPO_NAMES_3IN1_DB["3in1-db"]="3in1-db"
 
 declare -A GLOBAL_MASTER_COMMIT
 GLOBAL_MASTER_COMMIT["mangos-classic"]=""
@@ -248,10 +255,12 @@ GLOBAL_MASTER_COMMIT["mangos-wotlk"]=""
 GLOBAL_MASTER_COMMIT["classic-db"]=""
 GLOBAL_MASTER_COMMIT["tbc-db"]=""
 GLOBAL_MASTER_COMMIT["wotlk-db"]=""
+GLOBAL_MASTER_COMMIT["3in1-db"]="$(date +"%Y%m%d%H")"
 GLOBAL_MASTER_COMMIT["registration"]="$(getRepoCurrentMasterCommit)"
 
 function autoBuildGitMaster() {
-  for key in ${!DOCKER_REPO_NAMES[*]}; do
+  local -n repos=$1
+  for key in ${!repos[*]}; do
     cd /tmp/autoBuildContext
     initGitRepo ${key}
     local CURRENT_MASTER_COMMIT=""
@@ -264,10 +273,14 @@ function autoBuildGitMaster() {
       CURRENT_MASTER_COMMIT="${GLOBAL_MASTER_COMMIT["${key}"]}"
     fi
     #获取SERVER和realmd的docker repo
-    NAMES=($(echo ${DOCKER_REPO_NAMES[$key]} | sed "s/,/\n/g"))
+    NAMES=($(echo ${repos[$key]} | sed "s/,/\n/g"))
     for NAME in ${NAMES[*]}; do
       localsFile "${NAME}"
-      buildImage "${NAME}" "${CURRENT_MASTER_COMMIT}" "${1}"
+      buildImage "${NAME}" "${CURRENT_MASTER_COMMIT}" "${2}"
+      if [ "${1}" == "--push" ]; then
+       echo "sleep 180s..."
+       sleep 180s
+      fi
     done
   done
 }
@@ -300,7 +313,9 @@ function imagePushOld() {
       fi
 
       local DOCKER_FILE_NAME=""
-      if [[ "$key" == *db* ]]; then
+      if [[ "$key" == *3in1-db* ]]; then
+        DOCKER_FILE_NAME="Dockerfile-3in1-db"
+      elif [[ "$key" == *db* ]]; then
         DOCKER_FILE_NAME="Dockerfile-db"
       elif [[ "$key" == *registration* ]]; then
         DOCKER_FILE_NAME="Dockerfile-registration"
@@ -344,22 +359,43 @@ function initBuildContext() {
   fi
   cp -f ../Dockerfile-* /tmp/autoBuildContext
   cp -f ../*.sh /tmp/autoBuildContext
-  cp -rf ../../registration /tmp/autoBuildContext
+  if [ ! -d /tmp/autoBuildContext/registration ]; then
+    cp -rf ../../registration /tmp/autoBuildContext
+  fi
 }
 
-function imageBuild() {
-  autoBuildGitMaster
+function imageBuildServer() {
+  autoBuildGitMaster DOCKER_REPO_NAMES_SERVER
+}
+
+function imageBuildDB() {
+  autoBuildGitMaster DOCKER_REPO_NAMES_DB
+}
+
+function imageBuild3in1DB() {
+  autoBuildGitMaster DOCKER_REPO_NAMES_3IN1_DB
 }
 
 function imagePush() {
-  autoBuildGitMaster "--push"
+  autoBuildGitMaster DOCKER_REPO_NAMES_SERVER "--push"
+  autoBuildGitMaster DOCKER_REPO_NAMES_DB "--push"
+  autoBuildGitMaster DOCKER_REPO_NAMES_3IN1_DB "--push"
+}
+
+function imageLoad() {
+  autoBuildGitMaster DOCKER_REPO_NAMES_SERVER "--load"
+  autoBuildGitMaster DOCKER_REPO_NAMES_DB "--load"
+  autoBuildGitMaster DOCKER_REPO_NAMES_3IN1_DB "--load"
 }
 
 start_time=$(date +%s)
 initBuildContext
 #imageDelete
-imageBuild
+imageBuildDB
+imageBuild3in1DB
+imageBuildServer
 #modifyImageTag
+#imageLoad
 #imagePush
 cost_time=$(($(date +%s) - start_time))
 echo `date +"%H:%M:%S"`' build time is '$((cost_time / 3600))'hours '$((cost_time % 3600 / 60))'min '$((cost_time % 3600 % 60))'s'

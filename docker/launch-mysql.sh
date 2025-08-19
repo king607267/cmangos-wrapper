@@ -6,7 +6,7 @@ fi
 if [ -f "/var/lib/mysql/ready" ]; then
   rm /var/lib/mysql/ready #for k8s readinessProbe
 fi
-echo "WOW DATABASE CREATION..."
+echo "WOW ${CMANGOS_CORE} DATABASE CREATION..."
   CMANGOS_WORLD_DB=classicmangos
   CMANGOS_CHARACTER_DB=classiccharacters
   CMANGOS_REALMD_DB=classicrealmd
@@ -112,5 +112,4 @@ if [ -n "${CUSTOM_SQL_URL}" ]; then
 fi
 echo "USE ${CMANGOS_CORE}realmd;CREATE TABLE IF NOT EXISTS db_ready(id int); ;" | "${mysql[@]}" #for k8s readinessProbe
 touch /var/lib/mysql/ready #for k8s readinessProbe Delete in the future
-echo "COMPLETED."
-echo
+echo "${CMANGOS_CORE} COMPLETED."

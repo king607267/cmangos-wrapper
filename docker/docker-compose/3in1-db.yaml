@@ -1,0 +1,67 @@
+version: '3.7'
+
+services:
+  db:
+    image: king607267/cmangos-3in1-db:latest
+    ports:
+      - "3306:3306"
+    volumes:
+      - yourpath/db:/var/lib/mysql
+    restart: "no"
+    healthcheck:
+     test: [
+       "CMD-SHELL","cat /var/lib/mysql/allReady"
+     ]
+     interval: 20s
+     timeout: 1s
+     start_period: 45s
+    environment:
+      MYSQL_ROOT_PASSWORD: mangos
+      MYSQL_PASSWORD: mangos
+      MYSQL_USER: mangos
+      TZ: Asia/Shanghai
+      CLASSIC_REALM_IP: 127.0.0.1
+      CLASSIC_REALM_PORT: 8085
+      CLASSIC_REALM_NAME: MaNGOS
+      TBC_REALM_IP: 127.0.0.1
+      TBC_REALM_PORT: 8085
+      TBC_REALM_NAME: MaNGOS
+      WOTLK_REALM_IP: 127.0.0.1
+      WOTLK_REALM_PORT: 8085
+      WOTLK_REALM_NAME: MaNGOS
+      I18N: Chinese
+      CUSTOM_SQL_URL: http://sql.rpo
+
+  operator:
+    image: mysql
+    #      depends_on:
+    #        db:
+    #          condition: service_healthy
+    environment:
+      MYSQL_PASSWORD: mangos
+      MYSQL_USER: mangos
+      MYSQL_PORT: 3306
+      MYSQL_HOST: db
+      FQDN: https://wow.example.com
+      TZ: Asia/Shanghai
+    command:
+      - /bin/bash
+      - -c
+      - |       #!/bin/bash 
+        while true; do          
+          publicIp=`curl -v --connect-timeout 2 "$${FQDN}"  2>&1 | grep Trying | awk -F "Trying " '{print $2}' | awk -F ":" '{print $1}'`
+          if [[ -z "$${publicIp}" ]]; then
+            echo "$${publicIp} public ip not found."
+          else
+            echo "$${FQDN} public ip is $${publicIp}."
+            if mysql -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} -P$${MYSQL_PORT} -h$${MYSQL_HOST} -e '
+            UPDATE classicrealmd.realmlist SET address="$${publicIp}" WHERE id=1; \
+            UPDATE tbcrealmd.realmlist SET address="$${publicIp}" WHERE id=1; \
+            UPDATE wotlkrealmd.realmlist SET address="$${publicIp}" WHERE id=1;' > /dev/null 2>&1; then
+             echo "update public ip success!"
+            else
+             echo "update public ip failed!"
+            fi
+          fi
+          sleep 3600
+        done

@@ -5,7 +5,7 @@ MYSQL_USER=$(echo "$LOGIN_DATABASE_INFO" | awk -F ";" '{print $3}')
 MYSQL_PASSWORD=$(echo "$LOGIN_DATABASE_INFO" | awk -F ";" '{print $4}')
 
 MYSQL_COMMAND="mysql -h${MYSQL_HOST} -P${MYSQL_PORT} -p${MYSQL_PASSWORD} -u${MYSQL_USER}"
-until mysql -h$MYSQL_HOST -P${MYSQL_PORT:-3306} -u$MYSQL_USER -p$MYSQL_PASSWORD -e "USE ${CMANGOS_CORE}logs; DESCRIBE logs_db_version;USE ${CMANGOS_CORE}realmd; DESCRIBE realmd_db_version;USE ${CMANGOS_CORE}mangos; DESCRIBE db_version;"; do
+until mysql --connect-timeout=5 -h$MYSQL_HOST -P${MYSQL_PORT:-3306} -u$MYSQL_USER -p$MYSQL_PASSWORD -e "USE ${CMANGOS_CORE}logs; DESCRIBE logs_db_version;USE ${CMANGOS_CORE}realmd;DESCRIBE db_ready;DESCRIBE realmd_db_version;USE ${CMANGOS_CORE}mangos; DESCRIBE db_version;"; do
   >&2 echo "MySQL is unavailable - sleeping-15s"
   sleep 15
 done

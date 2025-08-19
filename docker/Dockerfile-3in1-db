@@ -1,0 +1,33 @@
+FROM mysql:8.0.39
+
+EXPOSE 3306
+ENV TZ=Asia/Shanghai
+
+WORKDIR /docker-entrypoint-initdb.d/
+ARG FROM_PATH=/docker-entrypoint-initdb.d/
+
+COPY --chown=mysql:mysql --chmod=644 --from=king607267/cmangos-classic-db ${FROM_PATH}mangos-classic.tar.gz .
+COPY --chown=mysql:mysql --chmod=644 --from=king607267/cmangos-classic-db ${FROM_PATH}classic-db.tar.gz .
+COPY --chown=mysql:mysql --chmod=755 --from=king607267/cmangos-classic-db ${FROM_PATH}mangos-classic mangos-classic
+COPY --chown=mysql:mysql --chmod=755 --from=king607267/cmangos-classic-db ${FROM_PATH}translations-db-classic translations-db-classic
+COPY --chown=mysql:mysql --chmod=755 --from=king607267/cmangos-classic-db ${FROM_PATH}classic-db/InstallFullDB.sh classic-db/InstallFullDB.sh
+COPY --chown=mysql:mysql --chmod=644 translations/translations-db-classic.tar.gz .
+
+COPY --chown=mysql:mysql --chmod=644 --from=king607267/cmangos-tbc-db ${FROM_PATH}mangos-tbc.tar.gz .
+COPY --chown=mysql:mysql --chmod=644 --from=king607267/cmangos-tbc-db ${FROM_PATH}tbc-db.tar.gz .
+COPY --chown=mysql:mysql --chmod=755 --from=king607267/cmangos-tbc-db ${FROM_PATH}mangos-tbc mangos-tbc
+COPY --chown=mysql:mysql --chmod=755 --from=king607267/cmangos-tbc-db ${FROM_PATH}translations-db-tbc translations-db-tbc
+COPY --chown=mysql:mysql --chmod=755 --from=king607267/cmangos-tbc-db ${FROM_PATH}tbc-db/InstallFullDB.sh tbc-db/InstallFullDB.sh
+COPY --chown=mysql:mysql --chmod=644 translations/translations-db-tbc.tar.gz .
+
+COPY --chown=mysql:mysql --chmod=644 --from=king607267/cmangos-wotlk-db ${FROM_PATH}mangos-wotlk.tar.gz .
+COPY --chown=mysql:mysql --chmod=644 --from=king607267/cmangos-wotlk-db ${FROM_PATH}wotlk-db.tar.gz .
+COPY --chown=mysql:mysql --chmod=755 --from=king607267/cmangos-wotlk-db ${FROM_PATH}mangos-wotlk mangos-wotlk
+COPY --chown=mysql:mysql --chmod=755 --from=king607267/cmangos-wotlk-db ${FROM_PATH}translations-db-wotlk translations-db-wotlk
+COPY --chown=mysql:mysql --chmod=755 --from=king607267/cmangos-wotlk-db ${FROM_PATH}wotlk-db/InstallFullDB.sh wotlk-db/InstallFullDB.sh
+COPY --chown=mysql:mysql --chmod=644 translations/translations-db-wotlk.tar.gz .
+
+COPY --chown=mysql:mysql --chmod=755 launch-mysql.sh launch-mysql/launch-mysql.sh
+COPY --chown=mysql:mysql --chmod=755 launch-3in1-mysql.sh .
+
+CMD ["mysqld"]

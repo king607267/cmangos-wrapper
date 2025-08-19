@@ -15,7 +15,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: wow
+  namespace: {{ .Values.cmangos.namespaceOverride }}
   name: {{ .Values.cmangos.type }}-mysql
 spec:
   selector:

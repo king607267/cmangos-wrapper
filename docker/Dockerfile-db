@@ -1,6 +1,5 @@
 FROM ubuntu:22.04 AS clonerepo
 ARG CMANGOS_CORE=classic
-ARG REVISION_NUM
 
 COPY mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
 COPY ${CMANGOS_CORE}-db ${CMANGOS_CORE}-db
@@ -35,7 +34,7 @@ COPY --chown=mysql:mysql --chmod=755 --from=clonerepo mangos-${CMANGOS_CORE} man
 COPY --chown=mysql:mysql --chmod=755 --from=clonerepo mangos-${CMANGOS_CORE} mangos-${CMANGOS_CORE}
 COPY --chown=mysql:mysql --chmod=755 --from=clonerepo translations-db-${CMANGOS_CORE} translations-db-${CMANGOS_CORE}
 COPY --chown=mysql:mysql --chmod=755 --from=clonerepo InstallFullDB.sh ${CMANGOS_CORE}-db/InstallFullDB.sh
-COPY --chown=mysql:mysql --chmod=755 launch-mysql.sh .
 COPY --chown=mysql:mysql --chmod=644 translations/translations-db-${CMANGOS_CORE}.tar.gz .
+COPY --chown=mysql:mysql --chmod=755 launch-mysql.sh .
 
 CMD ["mysqld"]
