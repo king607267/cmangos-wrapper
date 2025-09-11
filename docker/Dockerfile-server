@@ -33,12 +33,14 @@ COPY --from=build-step /mangos-${CMANGOS_CORE}/sql/updates/updates-sql.tar.gz ./
 COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 COPY run-realmd.sh ./run-realmd.sh
 COPY update-db-ver.sh ./update-db-ver.sh
+COPY kill-server.sh ./kill-server.sh
 
 RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev mysql-client openssl && rm -rf /var/lib/apt/lists/*
 RUN useradd -ms /bin/bash realm && \
     mv conf/realmd.conf.dist conf/realmd.conf && \
     chmod u+x run-realmd.sh && \
     chmod u+x update-db-ver.sh && \
+    chmod u+x kill-server.sh && \
     chown -R realm:realm .
 
 USER realm
@@ -64,6 +66,7 @@ COPY --from=build-step /mangos-${CMANGOS_CORE}/run/etc ./conf
 COPY --from=build-step /mangos-${CMANGOS_CORE}/src/game/AuctionHouseBot/ahbot.conf.dist.in ./conf/ahbot.conf
 COPY run-mangos.sh ./run-mangos.sh
 COPY update-db-ver.sh ./update-db-ver.sh
+COPY kill-server.sh ./kill-server.sh
 
 RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev mysql-client openssl && rm -rf /var/lib/apt/lists/*
 RUN useradd -ms /bin/bash mangos && \
@@ -71,6 +74,7 @@ RUN useradd -ms /bin/bash mangos && \
     sed -i 's/^DataDir = "."/DataDir = "\/etc\/mangos\/data"/' conf/mangosd.conf && \
     chmod u+x run-mangos.sh && \
     chmod u+x update-db-ver.sh && \
+    chmod u+x kill-server.sh && \
     chown -R mangos:mangos .
 
 USER mangos

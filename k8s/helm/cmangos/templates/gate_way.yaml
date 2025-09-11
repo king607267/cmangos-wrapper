@@ -14,8 +14,7 @@ metadata:
 spec:
   gatewayClassName: {{ .Values.cmangos.type }}-gateway-class
   addresses:
-    - address:
-      type: IPAddress
+    - type: IPAddress
       value: {{ .Values.gateway.ip }}
   listeners:
     - name: server

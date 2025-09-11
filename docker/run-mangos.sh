@@ -5,4 +5,4 @@ sed -i "s/^WorldDatabaseInfo     =.*$/WorldDatabaseInfo     = $WORLD_DATABASE_IN
 sed -i "s/^CharacterDatabaseInfo =.*$/CharacterDatabaseInfo = $CHARACTER_DATABASE_INFO/" /etc/mangos/conf/mangosd.conf
 sed -i "s/^LogsDatabaseInfo      =.*$/LogsDatabaseInfo      = $LOGS_DATABASE_INFO/" /etc/mangos/conf/mangosd.conf
 tar -m --no-overwrite-dir -xzf /etc/mangos/bin/mangosd.tar.gz -C /etc/mangos/bin && rm /etc/mangos/bin/mangosd.tar.gz
-exec /etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf
+./kill-server.sh Server & exec /etc/mangos/bin/mangosd -c /etc/mangos/conf/mangosd.conf -a /etc/mangos/conf/ahbot.conf
