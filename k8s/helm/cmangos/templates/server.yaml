@@ -67,10 +67,16 @@ spec:
             tcpSocket:
               port: {{ .Values.server.service.port }}
             periodSeconds: 30
+            initialDelaySeconds: 90
+            timeoutSeconds: 5
+            failureThreshold: 3
           livenessProbe:
             tcpSocket:
               port: {{ .Values.server.service.port }}
             periodSeconds: 30
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 3
           name: {{ .Values.cmangos.type }}-server
           lifecycle:
             preStop:

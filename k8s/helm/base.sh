@@ -11,8 +11,8 @@ helm upgrade --install cert-manager jetstack/cert-manager \
   --set crds.enabled=true \
   --set featureGates=ExperimentalGatewayAPISupport=true
 
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/standard-install.yaml
-helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.3.0 -n envoy-gateway-system --create-namespace
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
+helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v0.0.0-latest -n envoy-gateway-system --create-namespace
 
 #https://stackoverflow.com/questions/69802098/nginx-ingress-helm-deployment-tcp-services-configmap-argument-not-found
 #helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx

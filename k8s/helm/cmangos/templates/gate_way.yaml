@@ -1,10 +1,13 @@
+{{- if .Values.gateway.enabled }}
+{{- if .Values.gatewayClass.enabled }}
 kind: GatewayClass
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: {{ .Values.cmangos.type }}-gateway-class
+  name: {{ .Values.gatewayClass.name }}
 spec:
-  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  controllerName: {{ .Values.gatewayClass.controllerName }}
 ---
+{{- end }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -12,7 +15,7 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt
   name: {{ .Values.cmangos.type }}-gateway
 spec:
-  gatewayClassName: {{ .Values.cmangos.type }}-gateway-class
+  gatewayClassName: {{ .Values.gatewayClass.name }}
   addresses:
     - type: IPAddress
       value: {{ .Values.gateway.ip }}
@@ -90,3 +93,4 @@ spec:
     - backendRefs:
         - name: {{ .Values.cmangos.type }}-realmd-svc
           port: {{ .Values.realmd.service.port }}
+{{- end }}
