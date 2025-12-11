@@ -25,7 +25,7 @@ server:
     port: 8085
     soa:
       port: 7878
-    type: LoadBalancer
+    type: ClusterIP
   resources:
     requests:
       cpu: 0.1

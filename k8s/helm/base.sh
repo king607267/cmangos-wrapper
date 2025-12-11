@@ -4,15 +4,21 @@ helm upgrade --install metallb metallb/metallb \
   --namespace metallb-system \
   --create-namespace
 
+
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
+helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v0.0.0-latest -n envoy-gateway-system --create-namespace
+
+#https://cert-manager.io/docs/configuration/acme/http01/#configuring-the-http-01-gateway-api-solver
+#https://cert-manager.io/docs/usage/gateway/
 helm repo add jetstack https://charts.jetstack.io
 helm upgrade --install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
   --set crds.enabled=true \
-  --set featureGates=ExperimentalGatewayAPISupport=true
-
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
-helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v0.0.0-latest -n envoy-gateway-system --create-namespace
+  --set featureGates=ExperimentalGatewayAPISupport=true \
+  --set "extraArgs={--enable-gateway-api}" \
+  --set "hostAliases[0].ip=192.168.1.200" \
+  --set "hostAliases[0].hostnames={haha.happywang.top,grafana.happywang.top,prome.happywang.top,grafana.happywang.top,dashboard.happywang.top,nas.happywang.top,wow.happywang.top,wow.wotlk.happywang.top,wow.tbc.happywang.top,wow.classic.happywang.top}"
 
 #https://stackoverflow.com/questions/69802098/nginx-ingress-helm-deployment-tcp-services-configmap-argument-not-found
 #helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
@@ -24,7 +30,8 @@ helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v0.0
 #  --set tcp.3770="wow/tbc-realmd-svc:3724" \
 #  --set tcp.8080="wow/wotlk-realmd-svc:8085" \
 #  --set tcp.3780="wow/wotlk-realmd-svc:3724"
-
+#https://github.com/wjiec/alidns-webhook
+#https://devmachine-fr.github.io/cert-manager-alidns-webhook
 helm repo add cert-manager-alidns-webhook https://devmachine-fr.github.io/cert-manager-alidns-webhook
 helm upgrade --install alidns-webhook cert-manager-alidns-webhook/alidns-webhook \
   --namespace cert-manager \
@@ -55,6 +62,12 @@ spec:
     privateKeySecretRef:
       name: letsencrypt
     solvers:
+#      - http01:
+#          gatewayHTTPRoute:
+#            parentRefs:
+#              - name: main-gateway
+#                namespace: home-gateway
+#                kind: Gateway
       - dns01:
           webhook:
             config:
@@ -94,3 +107,12 @@ EOF
 #kubectl wait --for=condition=Ready pod --all -n ingress-nginx --timeout=300s
 kubectl wait --for=condition=Ready pod --all -n metallb-system --timeout=300s
 kubectl wait --for=condition=Available deployment/envoy-gateway -n envoy-gateway-system --timeout=300s
+
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wow
+  labels:
+    shared-gateway-access: "true"
+EOF
