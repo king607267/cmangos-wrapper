@@ -119,9 +119,6 @@ spec:
               name: ser-cla-soap
           volumeMounts:
             - name: wow-nfs
-              subPath: map/{{ .Values.cmangos.type }}
-              mountPath: /etc/mangos/data
-            - name: wow-nfs
               subPath: conf/{{ .Values.cmangos.type }}
               mountPath: /etc/mangos/conf
       restartPolicy: {{ .Values.image.restartPolicy }}
