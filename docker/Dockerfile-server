@@ -68,7 +68,7 @@ COPY run-mangos.sh ./run-mangos.sh
 COPY update-db-ver.sh ./update-db-ver.sh
 COPY kill-server.sh ./kill-server.sh
 
-RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev mysql-client openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get -y update && apt-get -y upgrade && DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata libmysqlclient-dev mysql-client openssl p7zip-full && rm -rf /var/lib/apt/lists/*
 RUN useradd -ms /bin/bash mangos && \
     mv conf/mangosd.conf.dist conf/mangosd.conf && \
     sed -i 's/^DataDir = "."/DataDir = "\/etc\/mangos\/data"/' conf/mangosd.conf && \
@@ -76,6 +76,8 @@ RUN useradd -ms /bin/bash mangos && \
     chmod u+x update-db-ver.sh && \
     chmod u+x kill-server.sh && \
     chown -R mangos:mangos .
+
+COPY --chown=mangos:mangos --chmod=644 ${CMANGOS_CORE}_maps.7z ./${CMANGOS_CORE}_maps.7z
 
 USER mangos
 CMD ["./run-mangos.sh"]

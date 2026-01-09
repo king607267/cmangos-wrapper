@@ -277,7 +277,7 @@ function autoBuildGitMaster() {
     for NAME in ${NAMES[*]}; do
       localsFile "${NAME}"
       buildImage "${NAME}" "${CURRENT_MASTER_COMMIT}" "${2}"
-      if [ "${1}" == "--push" ]; then
+      if [ "${2}" == "--push" ]; then
        echo "sleep 180s..."
        sleep 180s
       fi
@@ -362,6 +362,8 @@ function initBuildContext() {
   if [ ! -d /tmp/autoBuildContext/registration ]; then
     cp -rf ../../registration /tmp/autoBuildContext
   fi
+  #Copy maps .7z to build context
+  cp -f ~/WoW/maps/classic_maps.7z ~/WoW/maps/tbc_maps.7z ~/WoW/maps/wotlk_maps.7z /tmp/autoBuildContext
 }
 
 function imageBuildServer() {
