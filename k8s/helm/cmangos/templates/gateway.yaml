@@ -1,0 +1,55 @@
+{{- if .Values.gatewayClass.enabled }}
+kind: GatewayClass
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: {{ .Values.gatewayClass.name }}
+spec:
+  controllerName: {{ .Values.gatewayClass.controllerName }}
+{{- end }}
+{{- if and .Values.gatewayClass.enabled .Values.gateway.enabled }}
+---
+{{- end }}
+{{- if .Values.gateway.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  name: {{ .Values.cmangos.type }}-gateway
+spec:
+  gatewayClassName: {{ .Values.gatewayClass.name }}
+  addresses:
+    - type: IPAddress
+      value: {{ .Values.gateway.ip }}
+  listeners:
+    - name: server
+      protocol: TCP
+      port: {{ .Values.gateway.server.port }}
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+    - name: realmd
+      protocol: TCP
+      port: {{ .Values.gateway.realmd.port }}
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+    - name: registration-http
+      protocol: HTTP
+      port: {{ .Values.gateway.registration.port }}
+      allowedRoutes:
+        kinds:
+          - kind: HTTPRoute
+{{- if .Values.gateway.registration.tls.enabled }}
+    - name: registration-https
+      protocol: HTTPS
+      hostname: {{ .Values.gateway.registration.domain }}
+      port: {{ .Values.gateway.registration.tls.port }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+        - kind: Secret
+          group: ""
+          name: {{ .Values.cmangos.type }}-dns-issued-secret
+{{- end }}
+{{- end }}

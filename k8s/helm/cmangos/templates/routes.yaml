@@ -1,0 +1,54 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Values.cmangos.type }}-registration-route-http
+spec:
+  parentRefs:
+    - name: {{ .Values.cmangos.type }}-gateway
+      sectionName: registration-http
+    - name: {{ .Values.cmangos.type }}-gateway
+      sectionName: registration-https
+    - name: main-gateway
+      namespace: home-gateway
+      sectionName: shared-https
+    - name: main-gateway
+      namespace: home-gateway
+      sectionName: shared-http
+  hostnames:
+    - {{ .Values.gateway.registration.domain }}
+  rules:
+    - backendRefs:
+        - name: {{ .Values.cmangos.type }}-registration-svc
+          port: {{ .Values.registration.http.port }}
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: {{ .Values.cmangos.type }}-server-route
+spec:
+  parentRefs:
+    - name: {{ .Values.cmangos.type }}-gateway
+      sectionName: server
+    - name: main-gateway
+      namespace: home-gateway
+      sectionName: {{ .Values.cmangos.type }}-server
+  rules:
+    - backendRefs:
+        - name: {{ .Values.cmangos.type }}-server-svc
+          port: {{ .Values.server.service.port }}
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: {{ .Values.cmangos.type }}-realmd-route
+spec:
+  parentRefs:
+    - name: {{ .Values.cmangos.type }}-gateway
+      sectionName: realmd
+    - name: main-gateway
+      namespace: home-gateway
+      sectionName: {{ .Values.cmangos.type }}-realmd
+  rules:
+    - backendRefs:
+        - name: {{ .Values.cmangos.type }}-realmd-svc
+          port: {{ .Values.realmd.service.port }}

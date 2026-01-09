@@ -52,7 +52,7 @@ spec:
               {{- if .Values.mysql.enabled }}
               value: {{ .Values.cmangos.type }}-mysql-svc
               {{- else }}
-              value: {{ .Values.mysql.externalURL }}
+              value: {{ .Values.mysql.externalName }}
               {{- end }}
             - name: MYSQL_PORT
               value: {{ .Values.mysql.port | quote }}

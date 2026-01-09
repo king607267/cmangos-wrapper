@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-for /f "tokens=2 delims= " %%i in ('ping -n 1 %wow_domain%^| find "TTL="') do set ip=%%i
+for /f "tokens=2 delims=[]" %%i in ('ping -n 1 %wow_domain%^| find "["') do set ip=%%i
 
 if not defined ip (
     echo network is unreachable
