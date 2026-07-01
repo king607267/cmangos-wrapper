@@ -2,6 +2,7 @@
 set -eo pipefail
 
 HUB_DOCKER_USERNAME="king607267"
+BUILD_THREAD_COUNT="${BUILD_THREAD_COUNT:--j6}"
 function localsFile(){
 if [[ "$1" != *-db ]]; then
   return
@@ -225,10 +226,13 @@ function buildImage() {
   fi
   echo "buildx use cmangos_buildx"
   docker buildx use cmangos_buildx
-  echo " docker buildx build ${PLATFORM} --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} . $3"
-  docker buildx build ${PLATFORM}  --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} . $3
-  echo " docker buildx build ${PLATFORM} --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:latest ${TARGET} -f ${DOCKER_FILE_NAME} . $3"
-  docker buildx build ${PLATFORM}  --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:latest ${TARGET} -f ${DOCKER_FILE_NAME} . $3
+  local THREAD_ARG=""
+  if [[ "${DOCKER_FILE_NAME}" == "Dockerfile-server" ]] && [ -n "${BUILD_THREAD_COUNT}" ]; then
+    THREAD_ARG="--build-arg THREAD_COUNT=${BUILD_THREAD_COUNT}"
+  fi
+  echo " docker buildx build ${PLATFORM} --build-arg CMANGOS_CORE=${1%-*} ${THREAD_ARG} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:latest ${TARGET} -f ${DOCKER_FILE_NAME} . $3"
+  docker buildx build ${PLATFORM}  --build-arg CMANGOS_CORE=${1%-*} ${THREAD_ARG} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 -t ${HUB_DOCKER_USERNAME}/cmangos-$1:latest ${TARGET} -f ${DOCKER_FILE_NAME} . $3
+
 
 #    echo " docker build --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} ."
 #    docker build --build-arg CMANGOS_CORE=${1%-*} -t ${HUB_DOCKER_USERNAME}/cmangos-$1:$2 ${TARGET} -f ${DOCKER_FILE_NAME} .
