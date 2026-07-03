@@ -73,22 +73,19 @@ if [ ! -f "${LOCALS_FILE_PATH}/${DB_FILES}.tar.gz" ]; then
       cat "${SQL_PATH}/2_Add_NewLocalisationFields.sql" >>${SQL_123}
       echo -e >>${SQL_123}
       cat "${SQL_PATH}/3_InitialSaveEnglish.sql" >>${SQL_123}
-      #注释locales_command相关sql
-      sed -i 's/^INSERT.*\(command\).*$/-- &/' ${SQL_123}
-      sed -i '/^        ALTER.*\(command\).*/,/;$/s/^/-- &/' ${SQL_123}
-      sed -i '/^UPDATE.*\(command\).*/,/;$/s/^/-- &/' ${SQL_123}
-      #替换表名
-      sed -i 's/db_script/dbscript/' ${SQL_123}
-
-      #https://github.com/cmangos/issues/issues/2331
-      #注释creature_ai_texts,dbscript_string相关sql
-      sed -i 's/^INSERT.*\(creature_ai_texts\).*$/-- &/' ${SQL_123}
-      sed -i '/^        ALTER.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' ${SQL_123}
-      sed -i '/^UPDATE.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' ${SQL_123}
-
-      sed -i 's/^INSERT.*\(dbscript_string\).*$/-- &/' ${SQL_123}
-      sed -i '/^        ALTER.*\(dbscript_string\).*/,/;$/s/^/-- &/' ${SQL_123}
-      sed -i '/^UPDATE.*\(dbscript_string\).*/,/;$/s/^/-- &/' ${SQL_123}
+      # 注释并替换相关SQL（合并为单次 sed 操作）
+      sed -i \
+        -e 's/^INSERT.*\(command\).*$/-- &/' \
+        -e '/^        ALTER.*\(command\).*/,/;$/s/^/-- &/' \
+        -e '/^UPDATE.*\(command\).*/,/;$/s/^/-- &/' \
+        -e 's/db_script/dbscript/' \
+        -e 's/^INSERT.*\(creature_ai_texts\).*$/-- &/' \
+        -e '/^        ALTER.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' \
+        -e '/^UPDATE.*\(creature_ai_texts\).*/,/;$/s/^/-- &/' \
+        -e 's/^INSERT.*\(dbscript_string\).*$/-- &/' \
+        -e '/^        ALTER.*\(dbscript_string\).*/,/;$/s/^/-- &/' \
+        -e '/^UPDATE.*\(dbscript_string\).*/,/;$/s/^/-- &/' \
+        ${SQL_123}
       mv -f ${SQL_123} "${DB_FILES}/${TRANS}"
 
       local FULL_SQL="full_${LOCALE}.sql"
@@ -219,13 +216,15 @@ function buildImage() {
   fi
   #https://stackoverflow.com/questions/22179301/how-do-you-run-apt-get-in-a-dockerfile-behind-a-proxy
   #export DOCKER_CONFIG=~/.docker
-  if [ -z "$3" ]; then
-    createBuildx
-  else
+  # 自动判断是否需要多平台构建
+  if [ -n "$AARCH64_NODE_IP" ] || [ "$3" == "--push" ]; then
+    # 多平台模式：检测到远程 arm64 节点或明确要求 push
     PLATFORM="--platform linux/amd64,linux/arm64"
+  else
+    # 单平台模式：本地构建
+    PLATFORM="--platform linux/amd64"
   fi
-  echo "buildx use cmangos_buildx"
-  docker buildx use cmangos_buildx
+  # buildx 已在脚本启动时设置，无需重复 use
   local THREAD_ARG=""
   if [[ "${DOCKER_FILE_NAME}" == "Dockerfile-server" ]] && [ -n "${BUILD_THREAD_COUNT}" ]; then
     THREAD_ARG="--build-arg THREAD_COUNT=${BUILD_THREAD_COUNT}"
@@ -282,78 +281,10 @@ function autoBuildGitMaster() {
       localsFile "${NAME}"
       buildImage "${NAME}" "${CURRENT_MASTER_COMMIT}" "${2}"
       if [ "${2}" == "--push" ]; then
-       echo "sleep 180s..."
-       sleep 180s
+       echo "sleep 120s for Docker Hub propagation..."
+       sleep 120s
       fi
     done
-  done
-}
-
-function modifyImageTag() {
-  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
-    REPO=${key%:*}
-    if [ "${key#*:}" == "latest" ]; then
-      continue
-    fi
-    echo "docker tag $key to ${REPO}:latest"
-    docker tag "$key" "$REPO":latest
-  done
-}
-
-function imagePushOld() {
-  docker login -u "$1" -p "$2" docker.io
-    cd /tmp/autoBuildContext
-    for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter reference="${HUB_DOCKER_USERNAME}/*:*" | grep -v latest); do
-      local TAG=`echo $key | awk -F ":" '{print $2}'`
-      local REPOSITORY=`echo $key | awk -F ":" '{print $1}'`
-      local CMANGOS_CORE=`echo $key | awk -F "-" '{print $2}'`
-      local TYPE=`echo $REPOSITORY | awk -F "-" '{print $3}'`
-      echo "-----------"$TYPE
-      local TARGET=""
-      if [[ "$TYPE" == "server" ]]; then
-        TARGET="--target mangosd"
-      elif [[ "$TYPE" == "realmd" ]]; then
-        TARGET="--target realmd"
-      fi
-
-      local DOCKER_FILE_NAME=""
-      if [[ "$key" == *3in1-db* ]]; then
-        DOCKER_FILE_NAME="Dockerfile-3in1-db"
-      elif [[ "$key" == *db* ]]; then
-        DOCKER_FILE_NAME="Dockerfile-db"
-      elif [[ "$key" == *registration* ]]; then
-        DOCKER_FILE_NAME="Dockerfile-registration"
-      else
-        DOCKER_FILE_NAME="Dockerfile-server"
-      fi
-      #https://medium.com/@hassanahmad61931/docker-buildx-building-multi-platform-container-images-made-easy-304e1c3f00f1
-      #https://codeberg.org/woodpecker-plugins/docker-buildx/issues/82
-      echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
-      docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} -t ${key} ${TARGET} -f ${DOCKER_FILE_NAME} . --push
-      echo " docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push"
-      docker buildx build --platform linux/amd64,linux/arm64 --build-arg CMANGOS_CORE=${CMANGOS_CORE} -t ${REPOSITORY}:latest ${TARGET} -f ${DOCKER_FILE_NAME} . --push
-    done
-#      for key in $(docker images --format "{{.Repository}}:{{.Tag}}" --filter=reference="${HUB_DOCKER_USERNAME}/*"); do
-#        echo "docker push $key to hub"
-#        docker push "$key"
-#      done
-
-
-  #manifest method
-  #https://medium.com/@life-is-short-so-enjoy-it/docker-how-to-build-and-push-multi-arch-docker-images-to-docker-hub-64dea4931df9
-  #https://www.docker.com/blog/multi-arch-build-and-images-the-simple-way/
-  #https://github.com/docker/buildx?tab=readme-ov-file
-  #https://docs.docker.com/reference/cli/docker/manifest/
-#  for key in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep  "^$HUB_DOCKER_USERNAME" | grep "$ARCHITECTURE"); do
-#    repository=$(echo "${key}" | sed "s/-${ARCHITECTURE}//g")
-#    echo "docker manifest create --amend $repository $key $repository"
-#    docker manifest create --amend $repository $key $repository && docker manifest push $repository
-#  done
-}
-
-function imageDelete() {
-  for i in $(docker images --filter=reference="${HUB_DOCKER_USERNAME}/*:*" --format "{{.ID}}"); do
-    docker rmi -f $i
   done
 }
 
@@ -371,15 +302,15 @@ function initBuildContext() {
 }
 
 function imageBuildServer() {
-  autoBuildGitMaster DOCKER_REPO_NAMES_SERVER
+  autoBuildGitMaster DOCKER_REPO_NAMES_SERVER ${1:-""}
 }
 
 function imageBuildDB() {
-  autoBuildGitMaster DOCKER_REPO_NAMES_DB
+  autoBuildGitMaster DOCKER_REPO_NAMES_DB ${1:-""}
 }
 
 function imageBuild3in1DB() {
-  autoBuildGitMaster DOCKER_REPO_NAMES_3IN1_DB
+  autoBuildGitMaster DOCKER_REPO_NAMES_3IN1_DB ${1:-""}
 }
 
 function imagePush() {
@@ -396,12 +327,22 @@ function imageLoad() {
 
 start_time=$(date +%s)
 initBuildContext
-#imageDelete
-imageBuildDB
-imageBuild3in1DB
-imageBuildServer
-#modifyImageTag
-#imageLoad
-#imagePush
+# 提前创建 buildx 实例，避免每次构建时检查
+createBuildx
+docker buildx use cmangos_buildx
+
+# 提前确定构建模式
+if [ -n "$AARCH64_NODE_IP" ]; then
+  BUILD_MODE="--push"
+  echo "检测到多平台构建配置（AARCH64_NODE_IP=$AARCH64_NODE_IP），使用 push 模式"
+else
+  BUILD_MODE="--load"
+  echo "检测到单平台构建，使用 load 模式"
+fi
+
+# 传递参数到构建函数，一次性完成构建
+imageBuildDB $BUILD_MODE
+imageBuild3in1DB $BUILD_MODE
+imageBuildServer $BUILD_MODE
 cost_time=$(($(date +%s) - start_time))
 echo `date +"%H:%M:%S"`' build time is '$((cost_time / 3600))'hours '$((cost_time % 3600 / 60))'min '$((cost_time % 3600 % 60))'s'
