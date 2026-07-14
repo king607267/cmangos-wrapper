@@ -21,7 +21,7 @@ spec:
         - name: {{ .Values.cmangos.type }}-registration-svc
           port: {{ .Values.registration.http.port }}
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1
 kind: TCPRoute
 metadata:
   name: {{ .Values.cmangos.type }}-server-route
@@ -29,15 +29,21 @@ spec:
   parentRefs:
     - name: {{ .Values.cmangos.type }}-gateway
       sectionName: server
+{{- if .Values.listenerSet.enabled }}
+    - name: {{ .Values.cmangos.type }}-listenerset
+      kind: ListenerSet
+      sectionName: server
+{{- else }}
     - name: main-gateway
       namespace: home-gateway
       sectionName: {{ .Values.cmangos.type }}-server
+{{- end }}
   rules:
     - backendRefs:
         - name: {{ .Values.cmangos.type }}-server-svc
           port: {{ .Values.server.service.port }}
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1
 kind: TCPRoute
 metadata:
   name: {{ .Values.cmangos.type }}-realmd-route
@@ -45,9 +51,15 @@ spec:
   parentRefs:
     - name: {{ .Values.cmangos.type }}-gateway
       sectionName: realmd
+{{- if .Values.listenerSet.enabled }}
+    - name: {{ .Values.cmangos.type }}-listenerset
+      kind: ListenerSet
+      sectionName: realmd
+{{- else }}
     - name: main-gateway
       namespace: home-gateway
       sectionName: {{ .Values.cmangos.type }}-realmd
+{{- end }}
   rules:
     - backendRefs:
         - name: {{ .Values.cmangos.type }}-realmd-svc

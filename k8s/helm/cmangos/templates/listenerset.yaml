@@ -1,0 +1,29 @@
+{{- if .Values.listenerSet.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: {{ .Values.cmangos.type }}-listenerset
+spec:
+  parentRef:
+    name: main-gateway
+    namespace: home-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+    - name: server
+      protocol: TCP
+      port: {{ .Values.listenerSet.server.port }}
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+        namespaces:
+          from: Same
+    - name: realmd
+      protocol: TCP
+      port: {{ .Values.listenerSet.realmd.port }}
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+        namespaces:
+          from: Same
+{{- end }}
